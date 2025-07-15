@@ -1,0 +1,101 @@
+# L1 Model Configuration
+
+# Model Architecture
+model:
+  vocab_size: 50257
+  max_seq_length: 1024
+  n_layers: 12
+  n_heads: 12
+  n_embd: 768
+  n_inner: 3072  # 4 * n_embd
+  dropout: 0.1
+  layer_norm_epsilon: 1e-5
+  initializer_range: 0.02
+  use_cache: true
+  
+  # Special tokens
+  pad_token_id: 50256
+  eos_token_id: 50256
+  bos_token_id: 50256
+
+# Training Configuration
+training:
+  # Basic training parameters
+  num_epochs: 3
+  batch_size: 8
+  eval_batch_size: 8
+  learning_rate: 5e-4
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  
+  # Optimizer settings
+  optimizer_type: "adamw"
+  beta1: 0.9
+  beta2: 0.999
+  eps: 1e-8
+  
+  # Learning rate scheduling
+  scheduler_type: "cosine"
+  warmup_steps: 500
+  warmup_ratio: null
+  
+  # Data settings
+  max_seq_length: 1024
+  dataloader_num_workers: 4
+  dataloader_pin_memory: true
+  
+  # Training loop settings
+  eval_steps: 500
+  save_steps: 1000
+  logging_steps: 10
+  max_steps: null
+  
+  # Checkpointing
+  output_dir: "./checkpoints"
+  save_total_limit: 3
+  load_best_model_at_end: true
+  
+  # Evaluation
+  eval_strategy: "steps"
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+  
+  # Hardware settings
+  device: "auto"
+  fp16: false
+  gradient_checkpointing: false
+  
+  # Logging and monitoring
+  wandb_project: "l1-llm"
+  wandb_run_name: null
+  report_to: ["tensorboard"]
+  
+  # Reproducibility
+  seed: 42
+
+# Data Configuration
+data:
+  # Data paths
+  train_data_path: "./data/train.txt"
+  val_data_path: null
+  test_data_path: null
+  
+  # Data splits (used if val/test paths are null)
+  val_split: 0.1
+  test_split: 0.1
+  
+  # Tokenizer settings
+  tokenizer_type: "bpe"
+  vocab_size: 50257
+  
+  # Data processing
+  max_length: 1024
+  stride: 512  # For sliding window on long texts
+
+# Generation Configuration
+generation:
+  max_new_tokens: 50
+  temperature: 1.0
+  top_k: 50
+  top_p: 0.9
+  do_sample: true

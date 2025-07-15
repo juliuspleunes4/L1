@@ -1,0 +1,23 @@
+# Sample text data for L1 training
+# This is a placeholder file. Replace with your actual training data.
+
+The quick brown fox jumps over the lazy dog.
+Artificial intelligence is transforming the world in unprecedented ways.
+Language models like GPT and BERT have revolutionized natural language processing.
+Deep learning requires large amounts of data and computational resources.
+The transformer architecture uses attention mechanisms to process sequences.
+Training large language models is computationally expensive but yields powerful results.
+Text generation has many applications including chatbots, content creation, and code generation.
+Machine learning continues to advance rapidly with new breakthroughs every year.
+Neural networks can learn complex patterns from data through backpropagation.
+The future of AI holds great promise for solving complex problems.
+Natural language understanding is a key challenge in artificial intelligence.
+Large language models demonstrate emergent capabilities as they scale up.
+Attention is all you need, as stated in the famous transformer paper.
+Pre-training on large text corpora enables few-shot learning capabilities.
+Fine-tuning allows models to adapt to specific tasks and domains.
+Reinforcement learning from human feedback improves model alignment.
+The development of AI systems requires careful consideration of safety and ethics.
+Multimodal models combine text, images, and other data modalities.
+Open source initiatives democratize access to powerful AI technologies.
+Research in AI continues to push the boundaries of what's possible.
