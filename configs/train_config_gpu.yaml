@@ -1,0 +1,42 @@
+# GPU-optimized training configuration for L1
+# Use this config for training on your powerful new PC
+
+# Model configuration - scaled up for GPU training
+model:
+  max_seq_length: 2048      # Increased from 512
+  n_layers: 12              # Increased from 6
+  n_heads: 16               # Increased from 8  
+  n_embd: 1024              # Increased from 512
+  n_inner: 4096             # Increased from 2048
+  dropout: 0.1
+  layer_norm_epsilon: 0.00001
+  initializer_range: 0.02
+  use_cache: true
+
+# Training configuration - optimized for GPU
+training:
+  output_dir: "models/l1-gpu-v1"
+  num_epochs: 10
+  batch_size: 16            # Increased from 4 - adjust based on your GPU VRAM
+  learning_rate: 0.0001     # Slightly lower for larger model
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  save_steps: 1000
+  logging_steps: 100
+  max_steps: null           # Remove limit for full training
+  
+  # GPU-specific optimizations
+  gradient_accumulation_steps: 4  # Simulate larger batch size
+  mixed_precision: true     # Use automatic mixed precision (AMP)
+  dataloader_num_workers: 4 # Faster data loading
+
+# Data configuration - for larger datasets
+data:
+  train_data_path: "data/processed/train.txt"
+  max_length: 2048          # Increased sequence length
+  
+# Performance optimizations
+performance:
+  compile_model: true       # PyTorch 2.0 compilation
+  gradient_checkpointing: true  # Save memory for larger models
+  use_torch_compile: true
