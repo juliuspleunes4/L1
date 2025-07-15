@@ -1,2 +1,0 @@
-Training large language models is computationally expensive but yields powerful results.
-Text generation has many applications including chatbots, content creation, and code generation.

@@ -1,3 +1,0 @@
-# Sample text data for L1 training
-Artificial intelligence is transforming the world in unprecedented ways.
-Open source initiatives democratize access to powerful AI technologies.
