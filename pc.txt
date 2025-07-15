@@ -1,0 +1,11 @@
+# Installeer PyTorch met CUDA
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# Installeer requirements
+pip install -r requirements.txt
+
+# Beste dataset voor GPU training
+python dataset_manager.py --preset advanced
+
+# Start GPU training
+python train_gpu.py
