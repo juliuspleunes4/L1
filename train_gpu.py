@@ -17,6 +17,13 @@ import logging
 from tqdm import tqdm
 import time
 
+# Setup warning management
+try:
+    from warning_manager import setup_training_warnings
+    setup_training_warnings("medium")  # Suppress non-critical warnings
+except ImportError:
+    print("ℹ️  Warning manager not found - some non-critical warnings may appear")
+
 # Import the core model components from train_minimal
 from train_minimal import L1Config, L1Model, SimpleTokenizer, SimpleTextDataset
 
@@ -53,9 +60,10 @@ def get_gpu_info():
         print("❌ No GPU available, using CPU")
         return False
 
-def optimize_for_gpu(model, config):
+def optimize_for_gpu(model, config, device):
     """Apply GPU-specific optimizations"""
     optimizations_applied = []
+    is_cuda = device.type == 'cuda'
     
     # Enable gradient checkpointing for memory efficiency
     if config.get('performance', {}).get('gradient_checkpointing', False):
@@ -63,24 +71,45 @@ def optimize_for_gpu(model, config):
             model.gradient_checkpointing_enable()
             optimizations_applied.append("Gradient Checkpointing")
     
-    # Compile model for better performance (PyTorch 2.0+)
-    if config.get('performance', {}).get('compile_model', False):
+    # Compile model for better performance (PyTorch 2.0+) - only if no warnings
+    compile_model = config.get('performance', {}).get('compile_model', False)
+    if compile_model and is_cuda:  # Only compile on GPU to avoid C++ compiler issues
         try:
             model = torch.compile(model)
             optimizations_applied.append("Model Compilation")
         except Exception as e:
-            print(f"Warning: Could not compile model: {e}")
+            print(f"Warning: Could not compile model (this is okay): {e}")
+    elif compile_model and not is_cuda:
+        print("ℹ️  Model compilation disabled on CPU (avoiding C++ compiler requirement)")
     
-    # Enable mixed precision training
-    use_amp = config.get('training', {}).get('mixed_precision', False)
-    scaler = torch.cuda.amp.GradScaler() if use_amp else None
+    # Enable mixed precision training - use updated API
+    use_amp = config.get('training', {}).get('mixed_precision', False) and is_cuda
+    scaler = None
+    
     if use_amp:
-        optimizations_applied.append("Mixed Precision (AMP)")
+        try:
+            # Use the new API format
+            scaler = torch.amp.GradScaler('cuda')
+            optimizations_applied.append("Mixed Precision (AMP)")
+        except Exception:
+            # Fallback for older PyTorch versions
+            try:
+                scaler = torch.cuda.amp.GradScaler()
+                optimizations_applied.append("Mixed Precision (AMP)")
+            except Exception as e:
+                print(f"Warning: Could not enable mixed precision: {e}")
+                use_amp = False
+    elif config.get('training', {}).get('mixed_precision', False) and not is_cuda:
+        print("ℹ️  Mixed precision disabled on CPU (CUDA required)")
     
     if optimizations_applied:
-        print(f"🔧 GPU Optimizations Applied: {', '.join(optimizations_applied)}")
+        print(f"🔧 Optimizations Applied: {', '.join(optimizations_applied)}")
+    elif is_cuda:
+        print("ℹ️  No optimizations applied (check config settings)")
+    else:
+        print("ℹ️  GPU optimizations disabled (CPU training)")
     
-    return model, scaler
+    return model, scaler, use_amp
 
 def calculate_model_size(model):
     """Calculate model size and parameter breakdown"""
@@ -187,7 +216,7 @@ def main():
     total_params, param_breakdown = calculate_model_size(model)
     
     # Apply GPU optimizations
-    model, scaler = optimize_for_gpu(model, config)
+    model, scaler, use_amp = optimize_for_gpu(model, config, device)
     print("="*60)
     
     # Load training data
@@ -200,19 +229,24 @@ def main():
     
     # Enhanced dataloader for GPU training
     num_workers = config.get('training', {}).get('dataloader_num_workers', 0)
+    # Reduce workers on CPU to avoid overhead
+    if device.type == 'cpu' and num_workers > 2:
+        num_workers = 0
+        print("ℹ️  Reduced dataloader workers for CPU training")
+    
     train_dataloader = DataLoader(
         train_dataset, 
         batch_size=config['training']['batch_size'], 
         shuffle=True,
         num_workers=num_workers,
-        pin_memory=has_gpu,  # Pin memory for faster GPU transfer
-        persistent_workers=num_workers > 0
+        pin_memory=(device.type == 'cuda'),  # Only pin memory for GPU
+        persistent_workers=(num_workers > 0)
     )
     
     print(f"📦 DataLoader configured:")
     print(f"   ├── Batch size: {config['training']['batch_size']}")
     print(f"   ├── Workers: {num_workers}")
-    print(f"   └── Pin memory: {has_gpu}")
+    print(f"   └── Pin memory: {device.type == 'cuda'}")
     print("="*60)
     
     # Setup optimizer
@@ -259,12 +293,21 @@ def main():
             labels = batch['labels'].to(device, non_blocking=True)
             
             # Forward pass with optional mixed precision
-            if use_amp and scaler:
-                with torch.cuda.amp.autocast():
-                    outputs = model(input_ids)
-                    logits = outputs.logits
-                    loss = criterion(logits.view(-1, logits.size(-1)), labels.view(-1))
-                    loss = loss / gradient_accumulation_steps
+            if use_amp and scaler and device.type == 'cuda':
+                try:
+                    # Use the new API format
+                    with torch.amp.autocast('cuda'):
+                        outputs = model(input_ids)
+                        logits = outputs.logits
+                        loss = criterion(logits.view(-1, logits.size(-1)), labels.view(-1))
+                        loss = loss / gradient_accumulation_steps
+                except Exception:
+                    # Fallback for older PyTorch versions
+                    with torch.cuda.amp.autocast():
+                        outputs = model(input_ids)
+                        logits = outputs.logits
+                        loss = criterion(logits.view(-1, logits.size(-1)), labels.view(-1))
+                        loss = loss / gradient_accumulation_steps
             else:
                 outputs = model(input_ids)
                 logits = outputs.logits
@@ -272,14 +315,14 @@ def main():
                 loss = loss / gradient_accumulation_steps
             
             # Backward pass
-            if use_amp and scaler:
+            if use_amp and scaler and device.type == 'cuda':
                 scaler.scale(loss).backward()
             else:
                 loss.backward()
             
             # Update weights every gradient_accumulation_steps
             if (batch_idx + 1) % gradient_accumulation_steps == 0:
-                if use_amp and scaler:
+                if use_amp and scaler and device.type == 'cuda':
                     scaler.unscale_(optimizer)
                     torch.nn.utils.clip_grad_norm_(model.parameters(), config['training']['max_grad_norm'])
                     scaler.step(optimizer)
@@ -299,8 +342,8 @@ def main():
             if global_step % logging_steps == 0:
                 avg_loss = total_loss / logging_steps
                 
-                # GPU memory info
-                if has_gpu:
+                # GPU memory info (only if on GPU)
+                if device.type == 'cuda':
                     memory_used = torch.cuda.memory_allocated() / (1024**3)
                     memory_cached = torch.cuda.memory_reserved() / (1024**3)
                     progress_bar.set_postfix({
@@ -397,9 +440,12 @@ def main():
     print(f"\n🎯 To generate text:")
     print(f"   python generate_simple.py --model_path {output_dir}")
     
-    if has_gpu:
+    if device.type == 'cuda':
         print(f"\n📈 GPU Training Stats:")
         print(f"   ├── Peak GPU Memory: {torch.cuda.max_memory_allocated() / (1024**3):.1f} GB")
+        print(f"   └── Training Speed: {global_step / (training_time / 60):.1f} steps/minute")
+    else:
+        print(f"\n📈 CPU Training Stats:")
         print(f"   └── Training Speed: {global_step / (training_time / 60):.1f} steps/minute")
 
 if __name__ == '__main__':

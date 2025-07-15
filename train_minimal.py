@@ -15,6 +15,13 @@ from typing import List, Dict, Any
 import logging
 from tqdm import tqdm
 
+# Setup basic warning management
+try:
+    from warning_manager import setup_training_warnings
+    setup_training_warnings("low")  # Minimal warning suppression for debugging
+except ImportError:
+    pass  # Warning manager not available
+
 # Minimal model configuration
 class L1Config:
     def __init__(self, **kwargs):
