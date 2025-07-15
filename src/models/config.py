@@ -45,9 +45,9 @@ class L1Config:
     use_cache: bool = True
     
     # Special tokens
-    pad_token_id: int = 50256
-    eos_token_id: int = 50256
-    bos_token_id: int = 50256
+    pad_token_id: int = 0
+    eos_token_id: int = 1
+    bos_token_id: int = 2
     
     def __post_init__(self):
         """Post-initialization processing."""

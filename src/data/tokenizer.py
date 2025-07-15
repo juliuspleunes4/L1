@@ -295,9 +295,12 @@ class BPETokenizer(Tokenizer):
     
     def save(self, path: str):
         """Save tokenizer to file."""
+        # Convert tuple keys to strings for JSON serialization
+        merges_serializable = {f"{k[0]} {k[1]}": v for k, v in self.merges.items()}
+        
         tokenizer_data = {
             'vocab': self.vocab,
-            'merges': self.merges,
+            'merges': merges_serializable,
             'special_tokens': self.special_tokens,
             'vocab_size': self.vocab_size,
         }
@@ -318,7 +321,9 @@ class BPETokenizer(Tokenizer):
         
         tokenizer.vocab = tokenizer_data['vocab']
         tokenizer.id_to_token = {int(idx): token for token, idx in tokenizer.vocab.items()}
-        tokenizer.merges = {tuple(k.split()): v for k, v in tokenizer_data['merges'].items()}
+        
+        # Convert string keys back to tuples
+        tokenizer.merges = {tuple(k.split(' ', 1)): v for k, v in tokenizer_data['merges'].items()}
         
         return tokenizer
     
