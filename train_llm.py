@@ -41,7 +41,7 @@ def main():
     
     # Run training
     try:
-        cmd = [sys.executable, 'scripts/train.py', '--config', 'configs/train_config.yaml']
+        cmd = [sys.executable, 'train_simple.py']
         print(f"Running: {' '.join(cmd)}")
         print("-" * 60)
         subprocess.run(cmd, check=True)

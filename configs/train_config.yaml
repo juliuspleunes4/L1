@@ -10,7 +10,7 @@ model:
   n_embd: 512
   n_inner: 2048  # 4 * n_embd
   dropout: 0.1
-  layer_norm_epsilon: 1e-5
+  layer_norm_epsilon: 0.00001
   initializer_range: 0.02
   use_cache: true
   
@@ -25,7 +25,7 @@ training:
   num_epochs: 5
   batch_size: 4  # Smaller batch size for local training
   eval_batch_size: 4
-  learning_rate: 3e-4
+  learning_rate: 0.0003
   weight_decay: 0.01
   max_grad_norm: 1.0
   
