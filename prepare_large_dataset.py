@@ -38,7 +38,7 @@ class DatasetProcessor:
     
     def process_csv_dataset(self, csv_path: str, text_column: str, max_samples: int = None) -> List[str]:
         """Process CSV dataset (common Kaggle format)"""
-        print(f"📊 Processing CSV dataset: {csv_path}")
+        print(f"Processing CSV dataset: {csv_path}")
         
         texts = []
         chunk_size = 10000
@@ -61,7 +61,7 @@ class DatasetProcessor:
     
     def process_json_dataset(self, json_path: str, text_field: str, max_samples: int = None) -> List[str]:
         """Process JSONL or JSON dataset"""
-        print(f"📝 Processing JSON dataset: {json_path}")
+        print(f"Processing JSON dataset: {json_path}")
         
         texts = []
         
@@ -101,7 +101,7 @@ class DatasetProcessor:
     
     def process_text_dataset(self, txt_path: str, max_samples: int = None) -> List[str]:
         """Process plain text dataset"""
-        print(f"📄 Processing text dataset: {txt_path}")
+        print(f"Processing text dataset: {txt_path}")
         
         texts = []
         
@@ -121,7 +121,7 @@ class DatasetProcessor:
     
     def create_vocabulary(self, texts: List[str], vocab_size: int = 10000) -> dict:
         """Create character-level vocabulary from texts"""
-        print(f"🔤 Creating vocabulary (target size: {vocab_size:,})...")
+        print(f"Creating vocabulary (target size: {vocab_size:,})...")
         
         # Count character frequencies
         char_counts = {}
@@ -144,14 +144,14 @@ class DatasetProcessor:
         for i, char in enumerate(top_chars):
             vocab[char] = i + 4
         
-        print(f"✅ Vocabulary created with {len(vocab):,} tokens")
+        print(f"Vocabulary created with {len(vocab):,} tokens")
         print(f"   Most common characters: {list(top_chars[:20])}")
         
         return vocab
     
     def save_dataset(self, texts: List[str], vocab: dict, split_ratio: float = 0.9):
         """Save processed dataset and vocabulary"""
-        print(f"💾 Saving dataset...")
+        print(f"Saving dataset...")
         
         # Shuffle texts
         np.random.shuffle(texts)
@@ -188,10 +188,10 @@ class DatasetProcessor:
         with open(vocab_path, 'w', encoding='utf-8') as f:
             json.dump(vocab_data, f, indent=2)
         
-        print(f"✅ Dataset saved:")
-        print(f"   ├── Training: {len(train_texts):,} samples → {train_path}")
-        print(f"   ├── Validation: {len(val_texts):,} samples → {val_path}")
-        print(f"   └── Vocabulary: {len(vocab):,} tokens → {vocab_path}")
+        print(f"Dataset saved:")
+        print(f"   - Training: {len(train_texts):,} samples -> {train_path}")
+        print(f"   - Validation: {len(val_texts):,} samples -> {val_path}")
+        print(f"   - Vocabulary: {len(vocab):,} tokens -> {vocab_path}")
 
 def main():
     parser = argparse.ArgumentParser(description="Process large datasets for L1 training")
@@ -227,7 +227,7 @@ def main():
         else:
             raise ValueError(f"Could not auto-detect format for {input_path.suffix}")
     
-    print("🚀 Starting dataset processing...")
+    print("Starting dataset processing...")
     print(f"   Input: {args.input_path}")
     print(f"   Format: {args.format}")
     print(f"   Max samples: {args.max_samples or 'No limit'}")
@@ -247,14 +247,14 @@ def main():
         raise ValueError(f"Unsupported format: {args.format}")
     
     if not texts:
-        print("❌ No valid texts found in dataset!")
+        print("No valid texts found in dataset!")
         return
     
-    print(f"\n📊 Dataset Statistics:")
-    print(f"   ├── Total samples: {len(texts):,}")
-    print(f"   ├── Average length: {np.mean([len(t) for t in texts]):.1f} characters")
-    print(f"   ├── Min length: {min(len(t) for t in texts):,} characters")
-    print(f"   └── Max length: {max(len(t) for t in texts):,} characters")
+    print(f"\nDataset Statistics:")
+    print(f"   - Total samples: {len(texts):,}")
+    print(f"   - Average length: {np.mean([len(t) for t in texts]):.1f} characters")
+    print(f"   - Min length: {min(len(t) for t in texts):,} characters")
+    print(f"   - Max length: {max(len(t) for t in texts):,} characters")
     
     # Create vocabulary
     vocab = processor.create_vocabulary(texts, args.vocab_size)
@@ -262,7 +262,7 @@ def main():
     # Save dataset
     processor.save_dataset(texts, vocab, args.split_ratio)
     
-    print(f"\n🎯 Ready for training!")
+    print(f"\nReady for training!")
     print(f"   Use: python train_gpu.py")
 
 if __name__ == "__main__":

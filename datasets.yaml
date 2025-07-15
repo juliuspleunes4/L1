@@ -1,0 +1,213 @@
+# 📊 L1 Dataset Registry
+# Voeg hier gemakkelijk nieuwe datasets toe!
+
+datasets:
+  # Wikipedia datasets
+  wikipedia_simple:
+    name: "Wikipedia Simple English"
+    description: "High-quality encyclopedia articles in simple English"
+    download_method: "kagglehub"
+    kagglehub_path: "ffatty/plain-text-wikipedia-simpleenglish"
+    auto_detect_format: true
+    recommended_samples: 100000
+    recommended_vocab: 20000
+    quality: "high"
+    topics: ["general", "encyclopedia", "facts"]
+
+  wikipedia_full:
+    name: "Full Wikipedia English"
+    description: "Complete English Wikipedia dump"
+    download_method: "kagglehub" 
+    kagglehub_path: "jjinho/english-wikipedia-20230701"
+    auto_detect_format: true
+    recommended_samples: 500000
+    recommended_vocab: 50000
+    quality: "very_high"
+    topics: ["general", "encyclopedia", "comprehensive"]
+
+  # News datasets
+  news_all:
+    name: "All The News"
+    description: "143k news articles from major outlets"
+    download_method: "kaggle_api"
+    kaggle_path: "snapcrack/all-the-news"
+    file_pattern: "articles*.csv"
+    text_column: "content"
+    recommended_samples: 50000
+    recommended_vocab: 15000
+    quality: "high"
+    topics: ["news", "current_events", "journalism"]
+
+  news_reuters:
+    name: "Reuters News"
+    description: "Reuters news dataset"
+    download_method: "kagglehub"
+    kagglehub_path: "even2020/xtreme-reuters-multilingual"
+    auto_detect_format: true
+    recommended_samples: 75000
+    recommended_vocab: 18000
+    quality: "high"
+    topics: ["news", "international", "business"]
+
+  # Literature and books
+  books_gutenberg:
+    name: "Project Gutenberg Books"
+    description: "Classic literature and books"
+    download_method: "kaggle_api"
+    kaggle_path: "alexandreparent/gutenberg-database"
+    file_pattern: "*.csv"
+    text_column: "text"
+    recommended_samples: 80000
+    recommended_vocab: 25000
+    quality: "very_high"
+    topics: ["literature", "books", "classic"]
+
+  books_openlib:
+    name: "Open Library Books"
+    description: "Large collection of books"
+    download_method: "kagglehub"
+    kagglehub_path: "ymfa/bookcorpusopen"
+    auto_detect_format: true
+    recommended_samples: 200000
+    recommended_vocab: 30000
+    quality: "high"
+    topics: ["literature", "books", "modern"]
+
+  # Code and programming
+  code_github:
+    name: "GitHub Code Repositories"
+    description: "Source code from popular repositories"
+    download_method: "kagglehub"
+    kagglehub_path: "github/github-repos"
+    auto_detect_format: true
+    text_column: "content"
+    recommended_samples: 150000
+    recommended_vocab: 20000
+    quality: "medium"
+    topics: ["programming", "code", "technical"]
+
+  code_stackoverflow:
+    name: "Stack Overflow Q&A"
+    description: "Programming questions and answers"
+    download_method: "kaggle_api"
+    kaggle_path: "stackoverflow/stackoverflow"
+    file_pattern: "Questions.csv"
+    text_column: "Body"
+    recommended_samples: 100000
+    recommended_vocab: 20000
+    quality: "high"
+    topics: ["programming", "qa", "technical"]
+
+  # Social media and conversations
+  reddit_comments:
+    name: "Reddit Comments"
+    description: "Conversational text from Reddit"
+    download_method: "kagglehub"
+    kagglehub_path: "cosmos98/reddit-dataset"
+    auto_detect_format: true
+    recommended_samples: 200000
+    recommended_vocab: 25000
+    quality: "medium"
+    topics: ["conversation", "social", "informal"]
+
+  twitter_sentiment:
+    name: "Twitter Sentiment"
+    description: "Tweets with sentiment analysis"
+    download_method: "kaggle_api"
+    kaggle_path: "kazanova/sentiment140"
+    file_pattern: "*.csv"
+    text_column: "text"
+    recommended_samples: 100000
+    recommended_vocab: 15000
+    quality: "medium"
+    topics: ["social_media", "sentiment", "short_text"]
+
+  # Scientific and academic
+  papers_arxiv:
+    name: "ArXiv Papers"
+    description: "Scientific paper abstracts and content"
+    download_method: "kagglehub"
+    kagglehub_path: "Cornell-University/arxiv"
+    auto_detect_format: true
+    recommended_samples: 150000
+    recommended_vocab: 30000
+    quality: "very_high"
+    topics: ["science", "academic", "research"]
+
+  papers_pubmed:
+    name: "PubMed Abstracts"
+    description: "Medical and life science abstracts"
+    download_method: "kagglehub"
+    kagglehub_path: "allen-institute-for-ai/CORD-19-research-challenge"
+    auto_detect_format: true
+    recommended_samples: 100000
+    recommended_vocab: 25000
+    quality: "very_high"
+    topics: ["medical", "science", "research"]
+
+  # Mixed and comprehensive
+  common_crawl:
+    name: "Common Crawl Web Text"
+    description: "Web pages and articles"
+    download_method: "kagglehub"
+    kagglehub_path: "shivamb/real-or-fake-fake-jobposting-prediction"
+    auto_detect_format: true
+    recommended_samples: 300000
+    recommended_vocab: 40000
+    quality: "medium"
+    topics: ["web", "general", "diverse"]
+
+  openwebtext:
+    name: "OpenWebText"
+    description: "High-quality web text (GPT-2 style)"
+    download_method: "kagglehub"
+    kagglehub_path: "lonnieqin/openwebtext"
+    auto_detect_format: true
+    recommended_samples: 500000
+    recommended_vocab: 50000
+    quality: "high"
+    topics: ["web", "general", "gpt_style"]
+
+# Presets voor verschillende use cases
+presets:
+  beginner:
+    name: "Beginner Training"
+    recommended_datasets: ["wikipedia_simple", "news_all"]
+    max_samples: 50000
+    vocab_size: 10000
+    description: "Good for first experiments and quick training"
+
+  intermediate:
+    name: "Intermediate Training" 
+    recommended_datasets: ["wikipedia_simple", "books_gutenberg", "news_all"]
+    max_samples: 150000
+    vocab_size: 20000
+    description: "Balanced training with diverse content"
+
+  advanced:
+    name: "Advanced Training"
+    recommended_datasets: ["wikipedia_full", "books_openlib", "papers_arxiv"]
+    max_samples: 500000
+    vocab_size: 40000
+    description: "Comprehensive training for powerful models"
+
+  conversational:
+    name: "Conversational AI"
+    recommended_datasets: ["reddit_comments", "twitter_sentiment", "wikipedia_simple"]
+    max_samples: 200000
+    vocab_size: 25000
+    description: "Optimized for chat and conversation"
+
+  technical:
+    name: "Technical/Code AI"
+    recommended_datasets: ["code_github", "code_stackoverflow", "papers_arxiv"]
+    max_samples: 200000
+    vocab_size: 30000
+    description: "Specialized for programming and technical content"
+
+  knowledge:
+    name: "Knowledge-Rich AI"
+    recommended_datasets: ["wikipedia_full", "papers_arxiv", "books_gutenberg"]
+    max_samples: 400000
+    vocab_size: 50000
+    description: "Maximum factual knowledge and comprehension"

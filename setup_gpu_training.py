@@ -115,9 +115,9 @@ def start_training():
 
 def main():
     parser = argparse.ArgumentParser(description="L1 GPU Setup Assistant")
-    parser.add_argument("--dataset", default="news", 
-                       choices=["news", "wikipedia", "books", "custom"],
-                       help="Dataset to download and use")
+    parser.add_argument("--dataset", default="wikipedia", 
+                       choices=["news", "wikipedia", "wikipedia-old", "books", "custom"],
+                       help="Dataset to download and use (wikipedia recommended)")
     parser.add_argument("--samples", type=int, default=100000,
                        help="Maximum samples to process")
     parser.add_argument("--vocab-size", type=int, default=20000,
@@ -148,19 +148,27 @@ def main():
             "kaggle_path": "snapcrack/all-the-news",
             "file_path": "datasets/articles1.csv",
             "text_column": "content",
-            "description": "All The News (143k articles)"
+            "description": "All The News (143k articles)",
+            "method": "kaggle_api"
         },
         "wikipedia": {
+            "kagglehub_path": "ffatty/plain-text-wikipedia-simpleenglish", 
+            "description": "Wikipedia Simple English (Modern download)",
+            "method": "kagglehub"
+        },
+        "wikipedia-old": {
             "kaggle_path": "mikeortman/wikipedia-sentences", 
             "file_path": "datasets/wikipedia-sentences.csv",
             "text_column": "sentence",
-            "description": "Wikipedia Sentences"
+            "description": "Wikipedia Sentences (Legacy method)",
+            "method": "kaggle_api"
         },
         "books": {
             "kaggle_path": "alexandreparent/gutenberg-database",
             "file_path": "datasets/catalog.csv",
             "text_column": "text",
-            "description": "Project Gutenberg Books"
+            "description": "Project Gutenberg Books",
+            "method": "kaggle_api"
         }
     }
     
@@ -177,13 +185,47 @@ def main():
         print(f"📚 Selected dataset: {dataset_config['description']}")
         
         if not args.skip_download:
-            # Download dataset
-            if not download_dataset(dataset_config['description'], dataset_config['kaggle_path']):
-                print("❌ Dataset download failed")
-                return
+            # Check download method
+            if dataset_config.get("method") == "kagglehub":
+                # Use modern kagglehub method
+                print("🔄 Using modern kagglehub download method...")
+                import subprocess
+                cmd = f"python download_wikipedia.py --max-samples {args.samples} --vocab-size {args.vocab_size}"
+                try:
+                    result = subprocess.run(cmd, shell=True, check=True)
+                    print("✅ Wikipedia dataset downloaded and processed!")
+                    
+                    # Check if processing was successful
+                    required_files = [
+                        "data/processed/train.txt",
+                        "data/processed/val.txt", 
+                        "data/processed/tokenizer.json"
+                    ]
+                    
+                    if all(os.path.exists(f) for f in required_files):
+                        print("✅ All processed files ready for training!")
+                        # Skip manual processing since it's already done
+                        start_training()
+                        return
+                    else:
+                        print("⚠️  Some files missing, trying manual processing...")
+                except subprocess.CalledProcessError:
+                    print("❌ kagglehub download failed, falling back to traditional method...")
+            
+            # Traditional kaggle API download
+            if dataset_config.get("method") != "kagglehub" or True:  # Fallback
+                if not download_dataset(dataset_config['description'], dataset_config['kaggle_path']):
+                    print("❌ Dataset download failed")
+                    return
         
-        file_path = dataset_config['file_path']
-        text_column = dataset_config['text_column']
+        # Set file path for processing
+        if args.dataset == "wikipedia" and dataset_config.get("method") == "kagglehub":
+            # For kagglehub wikipedia, files should already be processed
+            print("ℹ️  Wikipedia dataset should already be processed by download_wikipedia.py")
+            return
+        else:
+            file_path = dataset_config['file_path']
+            text_column = dataset_config['text_column']
     
     # Check if dataset file exists
     if not os.path.exists(file_path):
