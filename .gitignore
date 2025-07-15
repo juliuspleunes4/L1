@@ -132,7 +132,12 @@ dmypy.json
 # Project specific
 checkpoints/
 logs/
-data/processed/
+data/processed/*.txt
+data/processed/*.jsonl
+data/processed/*.tsv
+data/processed/*.csv
+data/raw/
+!data/processed/tokenizer.json
 *.pt
 *.pth
 *.ckpt
