@@ -1,0 +1,102 @@
+# L1 Model Training Configuration
+# This config saves all LLM artifacts to a separate models/ directory
+
+# Model Architecture
+model:
+  vocab_size: 1000  # Will be updated based on tokenizer
+  max_seq_length: 512  # Smaller for faster training
+  n_layers: 6  # Smaller model for initial training
+  n_heads: 8
+  n_embd: 512
+  n_inner: 2048  # 4 * n_embd
+  dropout: 0.1
+  layer_norm_epsilon: 1e-5
+  initializer_range: 0.02
+  use_cache: true
+  
+  # Special tokens (will be updated based on tokenizer)
+  pad_token_id: 0
+  eos_token_id: 3
+  bos_token_id: 2
+
+# Training Configuration
+training:
+  # Basic training parameters
+  num_epochs: 5
+  batch_size: 4  # Smaller batch size for local training
+  eval_batch_size: 4
+  learning_rate: 3e-4
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  
+  # Optimizer settings
+  optimizer_type: "adamw"
+  beta1: 0.9
+  beta2: 0.999
+  eps: 1e-8
+  
+  # Learning rate scheduling
+  scheduler_type: "cosine"
+  warmup_steps: 100
+  warmup_ratio: null
+  
+  # Data settings
+  max_seq_length: 512
+  dataloader_num_workers: 0  # Set to 0 for Windows compatibility
+  dataloader_pin_memory: false
+  
+  # Training loop settings
+  eval_steps: 100
+  save_steps: 200
+  logging_steps: 10
+  max_steps: 1000  # Limit steps for quick training
+  
+  # Checkpointing - Save to models directory
+  output_dir: "./models/l1-v1"
+  save_total_limit: 3
+  load_best_model_at_end: true
+  
+  # Evaluation
+  eval_strategy: "steps"
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+  
+  # Hardware settings
+  device: "auto"
+  fp16: false
+  gradient_checkpointing: false
+  
+  # Logging and monitoring
+  wandb_project: "l1-llm"
+  wandb_run_name: "l1-v1-training"
+  report_to: ["tensorboard"]
+  
+  # Reproducibility
+  seed: 42
+
+# Data Configuration
+data:
+  # Data paths - use our prepared data
+  train_data_path: "./data/processed/train.txt"
+  val_data_path: "./data/processed/val.txt"
+  test_data_path: "./data/processed/test.txt"
+  
+  # Data splits (used if val/test paths are null)
+  val_split: 0.1
+  test_split: 0.1
+  
+  # Tokenizer settings
+  tokenizer_type: "bpe"
+  vocab_size: 1000
+  
+  # Data processing
+  max_length: 512
+  stride: 256  # For sliding window on long texts
+
+# Generation Configuration
+generation:
+  max_new_tokens: 50
+  temperature: 0.8
+  top_k: 40
+  top_p: 0.9
+  do_sample: true

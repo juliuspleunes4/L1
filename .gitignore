@@ -138,9 +138,24 @@ data/processed/*.tsv
 data/processed/*.csv
 data/raw/
 !data/processed/tokenizer.json
-*.pt
-*.pth
-*.ckpt
+
+# Model artifacts (keep structure, ignore large files)
+models/*/pytorch_model.bin
+models/*/model.safetensors
+models/*/*.pt
+models/*/*.pth
+models/*/*.ckpt
+models/*/checkpoint-*/pytorch_model.bin
+models/*/checkpoint-*/model.safetensors
+models/*/checkpoint-*/*.pt
+models/*/checkpoint-*/*.pth
+models/*/checkpoint-*/*.ckpt
+# But keep config and tokenizer files
+!models/*/config.json
+!models/*/tokenizer.json
+!models/*/training_args.json
+!models/*/README.md
+
 wandb/
 
 # IDE

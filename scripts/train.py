@@ -33,11 +33,22 @@ def load_config(config_path: str) -> dict:
 
 def create_tokenizer(config: dict) -> BPETokenizer:
     """Create or load tokenizer."""
-    tokenizer_path = os.path.join(config['training']['output_dir'], 'tokenizer.json')
+    # First check if tokenizer exists in data/processed (our prepared tokenizer)
+    prepared_tokenizer_path = './data/processed/tokenizer.json'
+    output_tokenizer_path = os.path.join(config['training']['output_dir'], 'tokenizer.json')
     
-    if os.path.exists(tokenizer_path):
-        print(f"Loading existing tokenizer from {tokenizer_path}")
-        tokenizer = BPETokenizer.load(tokenizer_path)
+    if os.path.exists(prepared_tokenizer_path):
+        print(f"Loading existing tokenizer from {prepared_tokenizer_path}")
+        tokenizer = BPETokenizer.load(prepared_tokenizer_path)
+        
+        # Copy tokenizer to output directory for model deployment
+        os.makedirs(os.path.dirname(output_tokenizer_path), exist_ok=True)
+        tokenizer.save(output_tokenizer_path)
+        print(f"Tokenizer copied to {output_tokenizer_path}")
+        
+    elif os.path.exists(output_tokenizer_path):
+        print(f"Loading existing tokenizer from {output_tokenizer_path}")
+        tokenizer = BPETokenizer.load(output_tokenizer_path)
     else:
         print("Training new tokenizer...")
         # Load training data for tokenizer training
@@ -53,9 +64,9 @@ def create_tokenizer(config: dict) -> BPETokenizer:
         tokenizer.train(train_texts[:10000])  # Use subset for faster training
         
         # Save tokenizer
-        os.makedirs(os.path.dirname(tokenizer_path), exist_ok=True)
-        tokenizer.save(tokenizer_path)
-        print(f"Tokenizer saved to {tokenizer_path}")
+        os.makedirs(os.path.dirname(output_tokenizer_path), exist_ok=True)
+        tokenizer.save(output_tokenizer_path)
+        print(f"Tokenizer saved to {output_tokenizer_path}")
     
     return tokenizer
 
@@ -130,7 +141,12 @@ def main():
     print("Starting training...")
     trainer.train()
     
+    # Save final model for deployment
+    trainer.save_final_model()
+    
     print("Training completed!")
+    print(f"Model saved to: {training_config.output_dir}")
+    print("Use scripts/generate_new.py to generate text with your trained model!")
 
 
 if __name__ == '__main__':

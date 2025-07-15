@@ -404,3 +404,43 @@ class Trainer:
         if self.global_step % self.config.logging_steps == 0:
             metric_str = " | ".join([f"{k}: {v:.4f}" for k, v in metrics.items()])
             self.logger.info(f"Step {self.global_step} | {metric_str}")
+    
+    def save_final_model(self):
+        """Save the final trained model for deployment."""
+        import json
+        
+        # Create model config dict
+        model_config = {
+            'vocab_size': self.model.config.vocab_size,
+            'max_seq_length': self.model.config.max_seq_length,
+            'n_layers': self.model.config.n_layers,
+            'n_heads': self.model.config.n_heads,
+            'n_embd': self.model.config.n_embd,
+            'n_inner': self.model.config.n_inner,
+            'dropout': self.model.config.dropout,
+            'layer_norm_epsilon': self.model.config.layer_norm_epsilon,
+            'initializer_range': self.model.config.initializer_range,
+            'use_cache': self.model.config.use_cache,
+            'pad_token_id': self.model.config.pad_token_id,
+            'eos_token_id': self.model.config.eos_token_id,
+            'bos_token_id': self.model.config.bos_token_id,
+        }
+        
+        # Save model config
+        config_path = os.path.join(self.config.output_dir, 'config.json')
+        with open(config_path, 'w') as f:
+            json.dump(model_config, f, indent=2)
+        
+        # Save model weights
+        model_path = os.path.join(self.config.output_dir, 'pytorch_model.bin')
+        torch.save(self.model.state_dict(), model_path)
+        
+        # Save training config
+        training_config_path = os.path.join(self.config.output_dir, 'training_args.json')
+        with open(training_config_path, 'w') as f:
+            json.dump(self.config.to_dict(), f, indent=2)
+        
+        self.logger.info(f"Final model saved to {self.config.output_dir}")
+        self.logger.info(f"Model config: {config_path}")
+        self.logger.info(f"Model weights: {model_path}")
+        self.logger.info(f"Training config: {training_config_path}")
