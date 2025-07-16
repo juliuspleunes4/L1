@@ -45,8 +45,8 @@ click>=8.1.0
 rich>=13.4.0
 python-dotenv>=1.0.0
 
-# Optional: For distributed training
-torch-distributed>=0.1.0
+# Optional: For distributed training (included in torch)
+# torch.distributed is part of the main torch package
 
 # Optional: For model optimization
 onnx>=1.14.0

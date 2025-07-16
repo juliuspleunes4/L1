@@ -186,10 +186,10 @@ presets:
 
   advanced:
     name: "Advanced Training"
-    recommended_datasets: ["wikipedia_full", "books_openlib", "papers_arxiv"]
+    recommended_datasets: ["wikipedia_simple", "books_openlib", "papers_arxiv"]
     max_samples: 500000
     vocab_size: 40000
-    description: "Comprehensive training for powerful models"
+    description: "Comprehensive training starting with high-quality Simple English Wikipedia"
 
   conversational:
     name: "Conversational AI"

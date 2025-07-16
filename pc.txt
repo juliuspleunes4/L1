@@ -1,11 +1,11 @@
-# Installeer PyTorch met CUDA
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+# Activeer virtual environment en installeer PyTorch met CUDA (niet nodig, al geïnstalleerd)
+# .venv\Scripts\activate
 
-# Installeer requirements
-pip install -r requirements.txt
+# Installeer requirements (al gedaan via VS Code tools)
+# C:/Users/Gebruiker/Desktop/projects/L1/.venv/Scripts/python.exe -m pip install -r requirements.txt
 
-# Beste dataset voor GPU training
-python dataset_manager.py --preset advanced
+# Download Simple English Wikipedia dataset (Kaggle: ffatty/plain-text-wikipedia-simpleenglish)
+C:/Users/Gebruiker/Desktop/projects/L1/.venv/Scripts/python.exe dataset_manager.py --preset advanced
 
 # Start GPU training
-python train_gpu.py
+C:/Users/Gebruiker/Desktop/projects/L1/.venv/Scripts/python.exe train_gpu.py
