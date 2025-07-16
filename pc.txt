@@ -1,11 +1,26 @@
-# Activeer virtual environment en installeer PyTorch met CUDA (niet nodig, al geïnstalleerd)
-# .venv\Scripts\activate
+# L1 LLM Training - Quick Setup Guide
+# Voor nieuwe gebruikers die de repo net hebben gecloned
 
-# Installeer requirements (al gedaan via VS Code tools)
-# C:/Users/Gebruiker/Desktop/projects/L1/.venv/Scripts/python.exe -m pip install -r requirements.txt
+# 1. Installeer PyTorch met CUDA ondersteuning (voor GPU training)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
-# Download Simple English Wikipedia dataset (Kaggle: ffatty/plain-text-wikipedia-simpleenglish)
-C:/Users/Gebruiker/Desktop/projects/L1/.venv/Scripts/python.exe dataset_manager.py --preset advanced
+# 2. Installeer alle andere requirements
+pip install -r requirements.txt
 
-# Start GPU training
-C:/Users/Gebruiker/Desktop/projects/L1/.venv/Scripts/python.exe train_gpu.py
+# 3. Verify GPU detection (optional)
+python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}'); print(f'GPU count: {torch.cuda.device_count()}'); print(f'GPU name: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"No GPU\"}')"
+
+# 4. Download en prepare dataset (Simple English Wikipedia via Kaggle)
+python dataset_manager.py --preset advanced
+
+# 5. Start GPU training
+python train_gpu.py
+
+# === Troubleshooting ===
+# Als GPU niet wordt gedetecteerd, probeer dan:
+# - Zorg dat NVIDIA drivers up-to-date zijn
+# - Controleer dat CUDA 12.1 geïnstalleerd is
+# - Herstart je computer na driver updates
+
+# Alternatief: Als je al een virtual environment hebt opgezet:
+# C:/Users/Gebruiker/Desktop/projects/L1/.venv/Scripts/python.exe train_gpu.py
