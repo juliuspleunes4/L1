@@ -184,12 +184,19 @@ def train_epoch(
     scheduler=None,
     save_checkpoint_fn=None,
     output_dir: str = None,
-    model_config=None  # Add model_config parameter
+    model_config=None,  # Add model_config parameter
+    resumed_global_step: int = 0  # Add resumed step parameter
 ) -> Dict[str, float]:
     """Train for one epoch - compatible version with frequent checkpointing"""
     model.train()
-    total_loss = 0.0
     num_batches = len(dataloader)
+    # If resuming, initialize total_loss to reflect previous progress
+    if resumed_global_step > 0 and hasattr(train_epoch, "previous_epoch_loss"):
+        total_loss = train_epoch.previous_epoch_loss * resumed_global_step
+        processed_batches = resumed_global_step
+    else:
+        total_loss = 0.0
+        processed_batches = 0
     
     # Training configuration
     gradient_accumulation_steps = config.get('training', {}).get('gradient_accumulation_steps', 1)
@@ -199,11 +206,20 @@ def train_epoch(
     # For local training: 100 steps (~18 minutes) provides excellent safety with minimal overhead
     checkpoint_every_steps = config.get('training', {}).get('checkpoint_every_steps', 100)  # Default: every 100 steps (~18 minutes)
     
-    progress_bar = tqdm(dataloader, desc=f"Epoch {epoch}", leave=False)
-    
+    # If resuming, skip batches already processed
+    from itertools import islice
+    start_batch = resumed_global_step if resumed_global_step > 0 else 0
+    total_batches = len(dataloader)
+    progress_bar = tqdm(
+        islice(dataloader, start_batch, total_batches),
+        desc=f"Epoch {epoch}",
+        leave=False,
+        initial=start_batch,
+        total=total_batches
+    )
     optimizer.zero_grad()
     
-    for batch_idx, batch in enumerate(progress_bar):
+    for batch_idx, batch in enumerate(progress_bar, start=start_batch):
         try:
             input_ids = batch['input_ids'].to(device, non_blocking=True)
             labels = batch['labels'].to(device, non_blocking=True)
@@ -244,17 +260,25 @@ def train_epoch(
                     scheduler.step()
             
             total_loss += loss.item() * gradient_accumulation_steps
+            processed_batches += 1
             current_lr = optimizer.param_groups[0]['lr']
-            
+            avg_loss = total_loss / (processed_batches if processed_batches > 0 else 1)
             progress_bar.set_postfix({
                 'loss': f'{loss.item() * gradient_accumulation_steps:.4f}',
-                'avg_loss': f'{total_loss / (batch_idx + 1):.4f}',
+                'avg_loss': f'{avg_loss:.4f}',
                 'lr': f'{current_lr:.2e}'
             })
             
             # Save checkpoint periodically during training
             if (batch_idx + 1) % checkpoint_every_steps == 0 and save_checkpoint_fn and output_dir:
-                current_step = (epoch - 1) * num_batches + batch_idx + 1
+                # Calculate step correctly considering resumption
+                if resumed_global_step > 0:
+                    # If we resumed, calculate from the resumed step
+                    current_step = resumed_global_step + batch_idx + 1
+                else:
+                    # Normal calculation for fresh training
+                    current_step = (epoch - 1) * num_batches + batch_idx + 1
+                    
                 current_loss = total_loss / (batch_idx + 1)
                 print(f"\n💾 Saving progress checkpoint at step {current_step}...")
                 save_checkpoint_fn(
@@ -291,6 +315,8 @@ def train_epoch(
             else:
                 raise e
     
+    # Store the running loss for future resumption
+    train_epoch.previous_epoch_loss = total_loss / (processed_batches if processed_batches > 0 else 1)
     return {
         'loss': total_loss / num_batches,
         'learning_rate': optimizer.param_groups[0]['lr']
@@ -609,7 +635,8 @@ def main():
             scheduler=scheduler,
             save_checkpoint_fn=save_checkpoint,
             output_dir=output_dir,
-            model_config=model_config
+            model_config=model_config,
+            resumed_global_step=global_step if epoch == start_epoch else 0  # Pass resumed step only for first resumed epoch
         )
         
         # Update global step counter
