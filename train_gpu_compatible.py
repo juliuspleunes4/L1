@@ -183,7 +183,8 @@ def train_epoch(
     use_amp: bool = False,
     scheduler=None,
     save_checkpoint_fn=None,
-    output_dir: str = None
+    output_dir: str = None,
+    model_config=None  # Add model_config parameter
 ) -> Dict[str, float]:
     """Train for one epoch - compatible version with frequent checkpointing"""
     model.train()
@@ -264,7 +265,8 @@ def train_epoch(
                     step=current_step,
                     loss=current_loss,
                     save_dir=output_dir,
-                    is_best=False
+                    is_best=False,
+                    model_config=model_config
                 )
             
         except RuntimeError as e:
@@ -302,7 +304,8 @@ def save_checkpoint(
     step: int,
     loss: float,
     save_dir: str,
-    is_best: bool = False
+    is_best: bool = False,
+    model_config=None  
 ):
     """Save training checkpoint with automatic cleanup of old checkpoints"""
     checkpoint = {
@@ -328,6 +331,42 @@ def save_checkpoint(
         best_path = os.path.join(save_dir, 'best_checkpoint.pt')
         torch.save(checkpoint, best_path)
         print(f"💾 Best checkpoint saved: {checkpoint_path}")
+        
+        # Also save in format compatible with generate_simple.py
+        try:
+            # Save model state dict as pytorch_model.bin
+            model_bin_path = os.path.join(save_dir, 'pytorch_model.bin')
+            torch.save(model.state_dict(), model_bin_path)
+            
+            # Save config as config.json
+            config_json_path = os.path.join(save_dir, 'config.json')
+            if model_config:
+                # Use the actual model configuration
+                model_config_dict = {
+                    'vocab_size': model_config.vocab_size,
+                    'max_seq_length': model_config.max_seq_length,
+                    'n_layers': model_config.n_layers,
+                    'n_heads': model_config.n_heads,
+                    'n_embd': model_config.n_embd,
+                    'n_inner': model_config.n_inner
+                }
+            else:
+                # Fallback to config defaults
+                model_config_dict = {
+                    'vocab_size': config.get('model', {}).get('vocab_size', 20000),
+                    'max_seq_length': config.get('model', {}).get('max_seq_length', 1024),
+                    'n_layers': config.get('model', {}).get('n_layers', 12),
+                    'n_heads': config.get('model', {}).get('n_heads', 16),
+                    'n_embd': config.get('model', {}).get('n_embd', 1024),
+                    'n_inner': config.get('model', {}).get('n_inner', 4096)
+                }
+            
+            with open(config_json_path, 'w') as f:
+                json.dump(model_config_dict, f, indent=2)
+            
+            print(f"📄 Generation-compatible format saved (pytorch_model.bin + config.json)")
+        except Exception as e:
+            print(f"⚠️  Failed to save generation format: {e}")
     else:
         print(f"💾 Checkpoint saved: {checkpoint_path}")
     
@@ -569,7 +608,8 @@ def main():
             use_amp=use_amp,
             scheduler=scheduler,
             save_checkpoint_fn=save_checkpoint,
-            output_dir=output_dir
+            output_dir=output_dir,
+            model_config=model_config
         )
         
         # Update global step counter
@@ -593,7 +633,8 @@ def main():
             step=global_step,
             loss=epoch_metrics['loss'],
             save_dir=output_dir,
-            is_best=False
+            is_best=False,
+            model_config=model_config
         )
         
         # Save best checkpoint if loss improved
@@ -607,7 +648,8 @@ def main():
                 step=global_step,
                 loss=best_loss,
                 save_dir=output_dir,
-                is_best=True
+                is_best=True,
+                model_config=model_config
             )
         
         # Save tokenizer (copy the original file)
