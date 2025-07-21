@@ -25,9 +25,11 @@ training:
   logging_steps: 100
   max_steps: null           # Remove limit for full training
   
-  # GPU-specific optimizations
+  # Local training optimizations
+  checkpoint_every_steps: 100    # Save every ~18 minutes for safety
+  max_checkpoints_to_keep: 5     # Keep only 5 most recent checkpoints
   gradient_accumulation_steps: 4  # Simulate larger batch size
-  mixed_precision: true     # Use automatic mixed precision (AMP)
+  mixed_precision: true          # Use automatic mixed precision (AMP)
   dataloader_num_workers: 4 # Faster data loading
 
 # Data configuration - for larger datasets

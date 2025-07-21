@@ -12,6 +12,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 import json
 import math
+import glob
 from typing import List, Dict, Any
 import logging
 from tqdm import tqdm
@@ -194,7 +195,8 @@ def train_epoch(
     max_grad_norm = config.get('training', {}).get('max_grad_norm', 1.0)
     
     # Checkpoint every N steps to save progress during long epochs
-    checkpoint_every_steps = config.get('training', {}).get('checkpoint_every_steps', 1000)  # Default: every 1000 steps (~3 hours)
+    # For local training: 100 steps (~18 minutes) provides excellent safety with minimal overhead
+    checkpoint_every_steps = config.get('training', {}).get('checkpoint_every_steps', 100)  # Default: every 100 steps (~18 minutes)
     
     progress_bar = tqdm(dataloader, desc=f"Epoch {epoch}", leave=False)
     
@@ -302,7 +304,7 @@ def save_checkpoint(
     save_dir: str,
     is_best: bool = False
 ):
-    """Save training checkpoint"""
+    """Save training checkpoint with automatic cleanup of old checkpoints"""
     checkpoint = {
         'epoch': epoch,
         'step': step,
@@ -313,6 +315,7 @@ def save_checkpoint(
         'best_loss': loss if is_best else None
     }
     
+    # Save the new checkpoint
     checkpoint_path = os.path.join(save_dir, f'checkpoint_epoch_{epoch}_step_{step}.pt')
     torch.save(checkpoint, checkpoint_path)
     
@@ -327,6 +330,35 @@ def save_checkpoint(
         print(f"💾 Best checkpoint saved: {checkpoint_path}")
     else:
         print(f"💾 Checkpoint saved: {checkpoint_path}")
+    
+    # Auto-cleanup: Keep only the last N regular checkpoints (excluding best/latest)
+    max_checkpoints = config.get('training', {}).get('max_checkpoints_to_keep', 5)  # Keep last 5 checkpoints
+    cleanup_old_checkpoints(save_dir, max_checkpoints)
+
+def cleanup_old_checkpoints(save_dir: str, max_to_keep: int = 5):
+    """Remove old checkpoint files, keeping only the most recent ones"""
+    try:
+        # Find all checkpoint files (excluding best_checkpoint.pt and latest_checkpoint.pt)
+        checkpoint_pattern = os.path.join(save_dir, 'checkpoint_epoch_*_step_*.pt')
+        import glob
+        checkpoint_files = glob.glob(checkpoint_pattern)
+        
+        if len(checkpoint_files) > max_to_keep:
+            # Sort by modification time (newest first)
+            checkpoint_files.sort(key=os.path.getmtime, reverse=True)
+            
+            # Remove old checkpoints (keep only the newest max_to_keep)
+            files_to_remove = checkpoint_files[max_to_keep:]
+            
+            for file_path in files_to_remove:
+                try:
+                    os.remove(file_path)
+                    filename = os.path.basename(file_path)
+                    print(f"🗑️  Cleaned up old checkpoint: {filename}")
+                except Exception as e:
+                    print(f"⚠️  Failed to remove {file_path}: {e}")
+    except Exception as e:
+        print(f"⚠️  Checkpoint cleanup failed: {e}")
 
 def load_checkpoint(checkpoint_path: str, model: nn.Module, optimizer: optim.Optimizer, device: torch.device):
     """Load training checkpoint and resume training"""
@@ -471,6 +503,8 @@ def main():
     print("🎓 Training Configuration:")
     print(f"   ├── Epochs: {num_epochs}")
     print(f"   ├── Total steps: {total_steps}")
+    print(f"   ├── Checkpoint every: {config.get('training', {}).get('checkpoint_every_steps', 100)} steps (~{config.get('training', {}).get('checkpoint_every_steps', 100) * 0.18:.0f} min)")
+    print(f"   ├── Keep checkpoints: {config.get('training', {}).get('max_checkpoints_to_keep', 5)} latest")
     print(f"   ├── Mixed precision: {use_amp}")
     print(f"   └── Optimizer: {type(optimizer).__name__}")
     print("="*60)
