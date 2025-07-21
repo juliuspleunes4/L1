@@ -263,23 +263,24 @@ def train_epoch(
             processed_batches += 1
             current_lr = optimizer.param_groups[0]['lr']
             avg_loss = total_loss / (processed_batches if processed_batches > 0 else 1)
+            global_step = batch_idx + 1
             progress_bar.set_postfix({
                 'loss': f'{loss.item() * gradient_accumulation_steps:.4f}',
                 'avg_loss': f'{avg_loss:.4f}',
-                'lr': f'{current_lr:.2e}'
+                'lr': f'{current_lr:.2e}',
+                'global_step': f'{global_step}/{num_batches}'
             })
             
             # Save checkpoint periodically during training
-            if (batch_idx + 1) % checkpoint_every_steps == 0 and save_checkpoint_fn and output_dir:
+            if (global_step) % checkpoint_every_steps == 0 and save_checkpoint_fn and output_dir:
                 # Calculate step correctly considering resumption
                 if resumed_global_step > 0:
                     # If we resumed, calculate from the resumed step
-                    current_step = resumed_global_step + batch_idx + 1
+                    current_step = global_step
                 else:
                     # Normal calculation for fresh training
-                    current_step = (epoch - 1) * num_batches + batch_idx + 1
-                    
-                current_loss = total_loss / (batch_idx + 1)
+                    current_step = (epoch - 1) * num_batches + global_step
+                current_loss = total_loss / (global_step)
                 print(f"\n💾 Saving progress checkpoint at step {current_step}...")
                 save_checkpoint_fn(
                     model=model,
