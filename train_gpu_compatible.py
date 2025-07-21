@@ -180,9 +180,11 @@ def train_epoch(
     config: dict,
     scaler=None,
     use_amp: bool = False,
-    scheduler=None
+    scheduler=None,
+    save_checkpoint_fn=None,
+    output_dir: str = None
 ) -> Dict[str, float]:
-    """Train for one epoch - compatible version"""
+    """Train for one epoch - compatible version with frequent checkpointing"""
     model.train()
     total_loss = 0.0
     num_batches = len(dataloader)
@@ -190,6 +192,9 @@ def train_epoch(
     # Training configuration
     gradient_accumulation_steps = config.get('training', {}).get('gradient_accumulation_steps', 1)
     max_grad_norm = config.get('training', {}).get('max_grad_norm', 1.0)
+    
+    # Checkpoint every N steps to save progress during long epochs
+    checkpoint_every_steps = config.get('training', {}).get('checkpoint_every_steps', 1000)  # Default: every 1000 steps (~3 hours)
     
     progress_bar = tqdm(dataloader, desc=f"Epoch {epoch}", leave=False)
     
@@ -244,6 +249,22 @@ def train_epoch(
                 'lr': f'{current_lr:.2e}'
             })
             
+            # Save checkpoint periodically during training
+            if (batch_idx + 1) % checkpoint_every_steps == 0 and save_checkpoint_fn and output_dir:
+                current_step = (epoch - 1) * num_batches + batch_idx + 1
+                current_loss = total_loss / (batch_idx + 1)
+                print(f"\n💾 Saving progress checkpoint at step {current_step}...")
+                save_checkpoint_fn(
+                    model=model,
+                    optimizer=optimizer,
+                    config=config,
+                    epoch=epoch,
+                    step=current_step,
+                    loss=current_loss,
+                    save_dir=output_dir,
+                    is_best=False
+                )
+            
         except RuntimeError as e:
             if "CUDA error" in str(e):
                 print(f"\n⚠️  CUDA error encountered: {e}")
@@ -278,7 +299,8 @@ def save_checkpoint(
     epoch: int,
     step: int,
     loss: float,
-    save_dir: str
+    save_dir: str,
+    is_best: bool = False
 ):
     """Save training checkpoint"""
     checkpoint = {
@@ -287,17 +309,39 @@ def save_checkpoint(
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         'loss': loss,
-        'config': config
+        'config': config,
+        'best_loss': loss if is_best else None
     }
     
     checkpoint_path = os.path.join(save_dir, f'checkpoint_epoch_{epoch}_step_{step}.pt')
     torch.save(checkpoint, checkpoint_path)
     
-    # Also save as latest checkpoint
+    # Always save as latest checkpoint for resuming
     latest_path = os.path.join(save_dir, 'latest_checkpoint.pt')
     torch.save(checkpoint, latest_path)
     
-    print(f"💾 Checkpoint saved: {checkpoint_path}")
+    # Save as best checkpoint if this is the best loss
+    if is_best:
+        best_path = os.path.join(save_dir, 'best_checkpoint.pt')
+        torch.save(checkpoint, best_path)
+        print(f"💾 Best checkpoint saved: {checkpoint_path}")
+    else:
+        print(f"💾 Checkpoint saved: {checkpoint_path}")
+
+def load_checkpoint(checkpoint_path: str, model: nn.Module, optimizer: optim.Optimizer, device: torch.device):
+    """Load training checkpoint and resume training"""
+    print(f"📥 Loading checkpoint from {checkpoint_path}")
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+    
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    
+    epoch = checkpoint['epoch']
+    step = checkpoint['step'] 
+    loss = checkpoint['loss']
+    
+    print(f"✅ Resumed from epoch {epoch}, step {step}, loss: {loss:.4f}")
+    return epoch, step, loss
 
 def main():
     """Main training function"""
@@ -436,6 +480,26 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     setup_logging(output_dir)
     
+    # Check for existing checkpoint to resume from
+    resume_path = os.path.join(output_dir, 'latest_checkpoint.pt')
+    start_epoch = 0
+    global_step = 0
+    best_loss = float('inf')
+    
+    if os.path.exists(resume_path):
+        try:
+            start_epoch, global_step, resume_loss = load_checkpoint(resume_path, model, optimizer, device)
+            best_loss = resume_loss
+            print(f"🔄 Resuming training from epoch {start_epoch}, step {global_step}")
+        except Exception as e:
+            print(f"⚠️  Failed to load checkpoint: {e}")
+            print("🚀 Starting fresh training...")
+            start_epoch = 0
+            global_step = 0
+            best_loss = float('inf')
+    else:
+        print("🚀 No existing checkpoint found. Starting fresh training...")
+    
     # Training loop with memory management
     print("🏁 Starting training...")
     
@@ -444,9 +508,7 @@ def main():
         torch.cuda.empty_cache()
         print("🧹 GPU cache cleared")
     
-    best_loss = float('inf')
-    
-    for epoch in range(num_epochs):
+    for epoch in range(start_epoch, num_epochs):
         print(f"\n📚 Epoch {epoch+1}/{num_epochs}")
         
         # Train one epoch
@@ -460,8 +522,13 @@ def main():
             config=config,
             scaler=scaler,
             use_amp=use_amp,
-            scheduler=scheduler
+            scheduler=scheduler,
+            save_checkpoint_fn=save_checkpoint,
+            output_dir=output_dir
         )
+        
+        # Update global step counter
+        global_step = (epoch+1) * len(dataloader)
         
         # Log metrics
         print(f"✅ Epoch {epoch+1} completed:")
@@ -472,7 +539,19 @@ def main():
         if device.type == 'cuda':
             torch.cuda.empty_cache()
         
-        # Save checkpoint if loss improved
+        # Always save latest checkpoint (for resuming)
+        save_checkpoint(
+            model=model,
+            optimizer=optimizer,
+            config=config,
+            epoch=epoch+1,
+            step=global_step,
+            loss=epoch_metrics['loss'],
+            save_dir=output_dir,
+            is_best=False
+        )
+        
+        # Save best checkpoint if loss improved
         if epoch_metrics['loss'] < best_loss:
             best_loss = epoch_metrics['loss']
             save_checkpoint(
@@ -480,9 +559,10 @@ def main():
                 optimizer=optimizer,
                 config=config,
                 epoch=epoch+1,
-                step=(epoch+1) * len(dataloader),
+                step=global_step,
                 loss=best_loss,
-                save_dir=output_dir
+                save_dir=output_dir,
+                is_best=True
             )
         
         # Save tokenizer (copy the original file)
