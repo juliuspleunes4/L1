@@ -522,9 +522,15 @@ def main():
     
     if os.path.exists(resume_path):
         try:
-            start_epoch, global_step, resume_loss = load_checkpoint(resume_path, model, optimizer, device)
+            checkpoint_epoch, global_step, resume_loss = load_checkpoint(resume_path, model, optimizer, device)
             best_loss = resume_loss
-            print(f"🔄 Resuming training from epoch {start_epoch}, step {global_step}")
+            
+            # The checkpoint saves epoch as 1-based (human-readable), but our loop is 0-based
+            # So if we're resuming from "epoch 1" (first epoch), we continue from epoch 0 in the loop
+            start_epoch = checkpoint_epoch - 1
+            
+            print(f"🔄 Resuming training from epoch {checkpoint_epoch}, step {global_step}")
+            print(f"📍 Continuing epoch {checkpoint_epoch} from step {global_step}")
         except Exception as e:
             print(f"⚠️  Failed to load checkpoint: {e}")
             print("🚀 Starting fresh training...")
@@ -543,7 +549,12 @@ def main():
         print("🧹 GPU cache cleared")
     
     for epoch in range(start_epoch, num_epochs):
-        print(f"\n📚 Epoch {epoch+1}/{num_epochs}")
+        current_epoch_display = epoch + 1
+        print(f"\n📚 Epoch {current_epoch_display}/{num_epochs}")
+        
+        # Check if this is a resumed training
+        if epoch == start_epoch and global_step > 0:
+            print(f"   └── Continuing from step {global_step}")
         
         # Train one epoch
         epoch_metrics = train_epoch(
@@ -552,7 +563,7 @@ def main():
             optimizer=optimizer,
             criterion=criterion,
             device=device,
-            epoch=epoch+1,
+            epoch=current_epoch_display,  # Pass the display epoch number (1-based)
             config=config,
             scaler=scaler,
             use_amp=use_amp,
@@ -562,10 +573,10 @@ def main():
         )
         
         # Update global step counter
-        global_step = (epoch+1) * len(dataloader)
+        global_step = current_epoch_display * len(dataloader)
         
         # Log metrics
-        print(f"✅ Epoch {epoch+1} completed:")
+        print(f"✅ Epoch {current_epoch_display} completed:")
         print(f"   ├── Average Loss: {epoch_metrics['loss']:.4f}")
         print(f"   └── Learning Rate: {epoch_metrics['learning_rate']:.2e}")
         
@@ -578,7 +589,7 @@ def main():
             model=model,
             optimizer=optimizer,
             config=config,
-            epoch=epoch+1,
+            epoch=current_epoch_display,  # Use the 1-based epoch number
             step=global_step,
             loss=epoch_metrics['loss'],
             save_dir=output_dir,
@@ -592,7 +603,7 @@ def main():
                 model=model,
                 optimizer=optimizer,
                 config=config,
-                epoch=epoch+1,
+                epoch=current_epoch_display,  # Use the 1-based epoch number
                 step=global_step,
                 loss=best_loss,
                 save_dir=output_dir,
