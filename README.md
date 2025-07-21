@@ -92,13 +92,56 @@ python demo.py
 This runs a comprehensive test of all components and shows you that everything is working.
 
 ### 2. Prepare Your Data
+
+#### Using Pre-configured Datasets (Recommended)
 ```bash
-# Prepare Wikipedia Simple English dataset (recommended)
+# Use Wikipedia Simple English (current default - recommended)
 python prepare_large_dataset.py
 
-# Or prepare custom data
+# Or choose from 15+ pre-configured datasets
+python add_dataset.py --preset beginner    # 50k samples, quick training
+python add_dataset.py --preset intermediate # 150k samples, balanced
+python add_dataset.py --preset advanced     # 500k samples, comprehensive
+```
+
+#### Adding Your Own Kaggle Dataset
+L1 makes it incredibly easy to add any Kaggle dataset:
+
+**Method 1: Add to datasets.yaml (Permanent)**
+```yaml
+# Edit datasets.yaml and add your dataset:
+your_dataset:
+  name: "Your Dataset Name"
+  description: "Dataset description"
+  download_method: "kagglehub"
+  kagglehub_path: "username/dataset-name"  # From Kaggle URL
+  auto_detect_format: true
+  recommended_samples: 100000
+  recommended_vocab: 20000
+  quality: "high"
+  topics: ["your", "topics"]
+```
+
+**Method 2: Direct Download (Quick)**
+```python
+import kagglehub
+dataset_path = kagglehub.dataset_download("username/dataset-name")
+python prepare_large_dataset.py --custom_path dataset_path
+```
+
+**Method 3: Using Kaggle API**
+```bash
+# Install and setup Kaggle API
+pip install kaggle
+kaggle datasets download username/dataset-name -p data/raw/
+python add_dataset.py --custom data/raw/dataset-name
+```
+
+#### Custom Data
+```bash
+# Prepare your own text files
 python scripts/prepare_data.py \
-    --input data/raw/sample_text.txt \
+    --input data/raw/your_text.txt \
     --output data/processed/
 ```
 
@@ -194,7 +237,145 @@ training:
   learning_rate: 5e-4
 ```
 
-## 📈 Training
+## � Adding Kaggle Datasets
+
+L1 includes a powerful dataset management system that makes adding Kaggle datasets incredibly easy. You have **15+ pre-configured datasets** ready to use, plus simple ways to add your own.
+
+### 🚀 Quick Start with Pre-configured Datasets
+
+Choose from curated datasets in `datasets.yaml`:
+
+```bash
+# Beginner: Quick training with high-quality data
+python add_dataset.py --preset beginner
+# → Wikipedia Simple + News (50k samples)
+
+# Intermediate: Balanced training 
+python add_dataset.py --preset intermediate  
+# → Wikipedia + Books + News (150k samples)
+
+# Advanced: Comprehensive training
+python add_dataset.py --preset advanced
+# → Wikipedia + Research Papers + Books (500k samples)
+
+# Specialized presets
+python add_dataset.py --preset conversational  # Reddit + Twitter + Wikipedia
+python add_dataset.py --preset technical       # GitHub + Stack Overflow + Papers
+python add_dataset.py --preset knowledge       # Full Wikipedia + Papers + Books
+```
+
+### 📚 Available Datasets
+
+| Dataset | Samples | Quality | Topics | Use Case |
+|---------|---------|---------|--------|----------|
+| **Wikipedia Simple** | 100k | High | Encyclopedia | **Current default** |
+| Wikipedia Full | 500k | Very High | Comprehensive | Large-scale training |
+| ArXiv Papers | 150k | Very High | Scientific | Technical knowledge |
+| Project Gutenberg | 80k | Very High | Literature | Creative writing |
+| Stack Overflow | 100k | High | Programming | Code understanding |
+| Reddit Comments | 200k | Medium | Conversation | Chat/dialogue |
+| News Articles | 50k | High | Current events | Factual knowledge |
+| OpenWebText | 500k | High | General web | GPT-style training |
+
+### 🔧 Adding Your Own Kaggle Dataset
+
+#### Method 1: Add to Configuration (Recommended)
+
+1. **Find your Kaggle dataset**: Go to kaggle.com, find your dataset
+2. **Edit `datasets.yaml`**: Add your dataset configuration
+
+```yaml
+# Example: Adding a new dataset
+your_awesome_dataset:
+  name: "Your Dataset Name"
+  description: "What this dataset contains"
+  download_method: "kagglehub"
+  kagglehub_path: "username/dataset-name"     # From Kaggle URL
+  auto_detect_format: true
+  recommended_samples: 100000
+  recommended_vocab: 20000
+  quality: "high"  # high, very_high, medium
+  topics: ["your", "topic", "tags"]
+
+# Add to a preset
+presets:
+  your_preset:
+    name: "Your Custom Training"
+    recommended_datasets: ["your_awesome_dataset", "wikipedia_simple"]
+    max_samples: 150000
+    vocab_size: 25000
+    description: "Your custom training mix"
+```
+
+3. **Use your dataset**:
+```bash
+python add_dataset.py your_awesome_dataset
+# or
+python add_dataset.py --preset your_preset
+```
+
+#### Method 2: Direct Download (Quick Testing)
+
+```python
+import kagglehub
+
+# Download any Kaggle dataset directly
+dataset_path = kagglehub.dataset_download("huggingface/squad")
+dataset_path = kagglehub.dataset_download("Cornell-University/arxiv")
+dataset_path = kagglehub.dataset_download("your-username/your-dataset")
+
+# Use with L1
+python prepare_large_dataset.py --custom_path dataset_path
+```
+
+#### Method 3: Kaggle API (Advanced)
+
+```bash
+# Setup Kaggle API (one time)
+pip install kaggle
+# Add your kaggle.json credentials to ~/.kaggle/
+
+# Download dataset
+kaggle datasets download username/dataset-name -p data/raw/
+unzip data/raw/dataset-name.zip -d data/raw/
+
+# Process with L1
+python add_dataset.py --custom data/raw/dataset-name
+```
+
+### 🎯 Dataset Selection Tips
+
+**For beginners:**
+- Start with `wikipedia_simple` (current default) - high quality, manageable size
+- Add `news_all` for current events knowledge
+
+**For specific use cases:**
+- **Conversational AI**: `reddit_comments` + `twitter_sentiment`  
+- **Technical/Code**: `code_stackoverflow` + `papers_arxiv`
+- **Creative Writing**: `books_gutenberg` + `books_openlib`
+- **Scientific**: `papers_arxiv` + `papers_pubmed`
+
+**For production models:**
+- Combine multiple high-quality sources
+- Use `openwebtext` for general knowledge
+- Include domain-specific data for your use case
+
+### 🔍 Verifying Your Dataset
+
+After adding a dataset, verify it's working:
+
+```bash
+# Check dataset info
+python dataset_manager.py --info your_dataset
+
+# Preview samples  
+python dataset_manager.py --preview your_dataset --samples 5
+
+# Validate format
+python dataset_manager.py --validate your_dataset
+```
+
+## �📈 Training
 
 ### GPU Training (Recommended)
 Train with GPU acceleration and advanced optimizations:
