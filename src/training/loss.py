@@ -1,7 +1,4 @@
 """
-Loss functions for L1 model training.
-"""
-"""
 @file       : loss.py
 @package    : src.training
 @author     : J.J.G. Pleunes

@@ -1,7 +1,4 @@
 """
-Configuration management for L1 model.
-"""
-"""
 @file       : config.py
 @package    : src.models
 @author     : J.J.G. Pleunes
