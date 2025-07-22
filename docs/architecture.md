@@ -12,13 +12,13 @@ Configuration class that defines all model hyperparameters:
 
 ```python
 config = L1Config(
-    vocab_size=50257,      # Vocabulary size
+    vocab_size=1783,       # Current vocabulary size (BPE tokenizer)
     max_seq_length=1024,   # Maximum sequence length
-    n_layers=12,           # Number of transformer layers
-    n_heads=12,            # Number of attention heads
-    n_embd=768,           # Embedding dimension
-    n_inner=3072,         # Feed-forward inner dimension
-    dropout=0.1,          # Dropout probability
+    n_layers=12,           # Number of transformer layers  
+    n_heads=16,            # Number of attention heads
+    n_embd=1024,           # Embedding dimension
+    n_inner=4096,          # Feed-forward inner dimension (4 * n_embd)
+    dropout=0.1,           # Dropout probability
 )
 ```
 
@@ -87,19 +87,20 @@ Input → Linear(n_embd → n_inner) → GELU → Linear(n_inner → n_embd) →
 - Use case: Testing and development
 
 ### Small
-- Layers: 6, Heads: 6, Embedding: 384  
+- Layers: 6, Heads: 8, Embedding: 512  
 - Parameters: ~25M
 - Use case: Proof of concept, small datasets
 
-### Base
-- Layers: 12, Heads: 12, Embedding: 768
-- Parameters: ~110M
-- Use case: Medium-scale experiments
+### **L1 Current (Production)**
+- **Layers: 12, Heads: 16, Embedding: 1024**
+- **Parameters: ~155.8M**
+- **Use case: Current production model, RTX 5060 Ti optimized**
+- **VRAM: 8GB required, 16GB recommended**
 
 ### Large
 - Layers: 24, Heads: 16, Embedding: 1024
 - Parameters: ~340M
-- Use case: Production-ready model
+- Use case: Large-scale research and production
 
 ## Generation
 

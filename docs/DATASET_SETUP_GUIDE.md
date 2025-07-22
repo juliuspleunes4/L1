@@ -1,168 +1,246 @@
-# 📚 Dataset Setup Guide for L1
+# 📚 L1 Dataset Setup Guide
 
-## 1. Install Kaggle API
+## 🚀 Current Status
+L1 is already set up with **Wikipedia Simple English** dataset:
+- ✅ **90,000+ high-quality samples** ready for training
+- ✅ **BPE tokenizer** with 1783 vocabulary (pre-trained)
+- ✅ **Preprocessed data** in `data/processed/`
+
+## 🎯 Quick Dataset Options
+
+### Option 1: Use Pre-configured Datasets (Recommended)
+L1 includes **15+ curated datasets** ready to download:
+
 ```bash
+# Beginner: Fast training (50k samples)
+python add_dataset.py --preset beginner
+
+# Intermediate: Balanced training (150k samples)  
+python add_dataset.py --preset intermediate
+
+# Advanced: Comprehensive training (500k samples)
+python add_dataset.py --preset advanced
+```
+
+### Option 2: Choose Specific Datasets
+```bash
+# High-quality options
+python add_dataset.py wikipedia_full      # 500k Wikipedia articles
+python add_dataset.py papers_arxiv        # Scientific papers  
+python add_dataset.py books_gutenberg     # Classic literature
+python add_dataset.py openwebtext         # GPT-style web text
+
+# Specialized datasets
+python add_dataset.py code_stackoverflow  # Programming Q&A
+python add_dataset.py reddit_comments     # Conversational text
+python add_dataset.py news_all            # Current events
+```
+
+### Option 3: Continue with Current Dataset
+Your current Wikipedia Simple dataset is excellent for:
+- High text quality and educational content
+- Manageable size for development and testing
+- Good vocabulary coverage for general language
+
+```bash
+# Continue training with current dataset
+python train_gpu_compatible.py
+```
+
+## 📊 Available Dataset Presets
+
+L1's `datasets.yaml` includes curated collections:
+
+### Beginner Preset (Recommended for testing)
+- **Wikipedia Simple** + **News articles**
+- **50,000 samples** - Fast training and iteration  
+- **Vocab size**: 15,000 tokens
+- **Training time**: 2-4 hours on GPU
+
+### Intermediate Preset (Balanced)
+- **Wikipedia** + **Books** + **News** 
+- **150,000 samples** - Good performance balance
+- **Vocab size**: 25,000 tokens  
+- **Training time**: 6-12 hours on GPU
+
+### Advanced Preset (Production)
+- **Wikipedia** + **Research Papers** + **Books**
+- **500,000 samples** - High-quality results
+- **Vocab size**: 50,000 tokens
+- **Training time**: 24-48 hours on GPU
+
+### Specialized Presets
+```bash
+python add_dataset.py --preset conversational  # Reddit + Twitter + Chat
+python add_dataset.py --preset technical       # GitHub + Stack Overflow  
+python add_dataset.py --preset knowledge       # Full Wikipedia + Papers
+python add_dataset.py --preset creative        # Books + Literature + Stories
+```
+## 🔧 Adding Custom Kaggle Datasets
+
+L1 makes it incredibly easy to add any Kaggle dataset:
+
+### Method 1: KaggleHub (Easiest)
+```python
+import kagglehub
+
+# Download any Kaggle dataset directly
+dataset_path = kagglehub.dataset_download("username/dataset-name")
+
+# Use with L1
+python prepare_large_dataset.py --custom_path dataset_path
+```
+
+### Method 2: Add to datasets.yaml (Permanent)
+Edit `datasets.yaml` and add your dataset:
+```yaml
+your_awesome_dataset:
+  name: "Your Dataset Name"
+  description: "Dataset description"
+  download_method: "kagglehub" 
+  kagglehub_path: "username/dataset-name"  # From Kaggle URL
+  auto_detect_format: true
+  recommended_samples: 100000
+  recommended_vocab: 20000
+  quality: "high"
+  topics: ["your", "topics"]
+```
+
+Then use it:
+```bash
+python add_dataset.py your_awesome_dataset
+```
+
+### Method 3: Kaggle API (Traditional)
+```bash
+# Setup Kaggle API (one time)
 pip install kaggle
+# Add kaggle.json credentials to ~/.kaggle/
+
+# Download and use
+kaggle datasets download username/dataset-name -p data/raw/
+python add_dataset.py --custom data/raw/dataset-name
 ```
 
-## 2. Setup Kaggle Credentials
-1. Go to kaggle.com → Account → Create New API Token
-2. Download `kaggle.json` 
-3. Place it in: `C:\Users\{username}\.kaggle\kaggle.json` (Windows)
-4. Or set environment variables:
-   ```bash
-   set KAGGLE_USERNAME=your_username
-   set KAGGLE_KEY=your_api_key
-   ```
+## 📈 Dataset Management & Verification
 
-## 3. Popular Text Datasets for LLM Training
-
-### News Articles (Great for general knowledge)
+### View Available Datasets
 ```bash
-# All The News (143k articles)
-kaggle datasets download -d snapcrack/all-the-news -p ./datasets/
-unzip ./datasets/all-the-news.zip -d ./datasets/news/
+# List all pre-configured datasets
+python dataset_manager.py --list
 
-# Process the dataset
-python prepare_large_dataset.py "datasets/news/articles1.csv" --text-column "content" --max-samples 100000 --vocab-size 20000
+# Get detailed info about a dataset
+python dataset_manager.py --info wikipedia_simple
+
+# Preview dataset samples
+python dataset_manager.py --preview wikipedia_simple --samples 5
 ```
 
-### Wikipedia Text (High quality, diverse topics)
+### Verify Your Current Data
 ```bash
-# Wikipedia Text (6M articles)
-kaggle datasets download -d jkkphys/english-wikipedia-articles-20170820-sqlite -p ./datasets/
-# This is SQLite format - you'll need to extract text
+# Check current dataset status
+ls data/processed/
+# Should show: train.txt, val.txt, tokenizer.json
 
-# Alternative: Simple Wikipedia
-kaggle datasets download -d mikeortman/wikipedia-sentences -p ./datasets/
-python prepare_large_dataset.py "datasets/wikipedia-sentences.csv" --text-column "sentence"
-```
-
-### Books/Literature (Rich language patterns)
-```bash
-# Project Gutenberg Books
-kaggle datasets download -d alexandreparent/gutenberg-database -p ./datasets/
-
-# BookCorpus (larger dataset)
-kaggle datasets download -d vishnurapps/book-corpus -p ./datasets/
-```
-
-### Code/Programming (If you want code-aware model)
-```bash
-# GitHub repositories
-kaggle datasets download -d github/github-repos -p ./datasets/
-
-# Stack Overflow
-kaggle datasets download -d stackoverflow/stackoverflow -p ./datasets/
-```
-
-### Reddit/Social Media (Conversational patterns)
-```bash
-# Reddit comments
-kaggle datasets download -d reddit/reddit-comments-2017 -p ./datasets/
-
-# Twitter sentiment
-kaggle datasets download -d kazanova/sentiment140 -p ./datasets/
-```
-
-## 4. Example: Quick Start with News Dataset
-
-### Download and Process
-```bash
-# 1. Download news dataset (smaller, good for testing)
-kaggle datasets download -d snapcrack/all-the-news -p ./datasets/
-
-# 2. Extract
-cd datasets
-unzip all-the-news.zip
-
-# 3. Go back to L1 directory
-cd ..
-
-# 4. Process the dataset
-python prepare_large_dataset.py "datasets/articles1.csv" --text-column "content" --max-samples 50000 --vocab-size 15000
+# View dataset statistics 
+python dataset_manager.py --stats
 ```
 
 ### Expected Output
 ```
-📊 Dataset Statistics:
-   ├── Total samples: 50,000
-   ├── Average length: 2,847.3 characters
-   ├── Min length: 287 characters
-   └── Max length: 15,423 characters
+📊 Current Dataset (Wikipedia Simple):
+   ├── Training samples: 90,247
+   ├── Validation samples: 10,027  
+   ├── Vocabulary size: 1,783 tokens
+   ├── Average length: 512.3 characters
+   └── Quality: High (educational content)
 
-✅ Dataset saved:
-   ├── Training: 45,000 samples → data/processed/train.txt
-   ├── Validation: 5,000 samples → data/processed/val.txt
-   └── Vocabulary: 15,000 tokens → data/processed/tokenizer.json
+✅ Ready for training with:
+   └── python train_gpu_compatible.py
 ```
 
-## 5. Advanced: Combine Multiple Datasets
+## 🎯 Dataset Selection Guide
 
-### Script to merge datasets
-```python
-# combine_datasets.py
-import pandas as pd
-import os
+### For Current Development (Recommended)
+✅ **Keep your current Wikipedia Simple dataset**
+- High-quality educational content
+- Perfect for model development and testing
+- Already processed and ready
+- Good vocabulary coverage (1,783 tokens)
 
-datasets = [
-    ("datasets/news/articles1.csv", "content"),
-    ("datasets/books/books.csv", "text"), 
-    ("datasets/wiki/wikipedia.csv", "text")
-]
-
-all_texts = []
-for file_path, column in datasets:
-    if os.path.exists(file_path):
-        df = pd.read_csv(file_path)
-        texts = df[column].dropna().tolist()
-        all_texts.extend(texts)
-        print(f"Added {len(texts):,} texts from {file_path}")
-
-# Save combined dataset
-with open("datasets/combined_dataset.txt", "w", encoding="utf-8") as f:
-    for text in all_texts:
-        if isinstance(text, str) and len(text) > 50:
-            f.write(text.strip() + "\n")
-
-print(f"Combined dataset: {len(all_texts):,} total texts")
-```
-
-## 6. Dataset Size Recommendations
-
-### For Testing (Your laptop)
-- **10K-100K samples**: Quick iteration and testing
-- **Vocab size**: 5K-10K tokens
-- **Model**: Keep current size (19M params)
-
-### For GPU Training (Your new PC)
-- **100K-1M samples**: Good performance gains
-- **Vocab size**: 15K-50K tokens  
-- **Model**: Use GPU config (80M+ params)
-
-### For Production Training
-- **1M+ samples**: State-of-the-art results
-- **Vocab size**: 50K+ tokens
-- **Model**: Scale up further
-
-## 7. Storage Requirements
-
-| Dataset Size | Disk Space | Processing Time | RAM Needed |
-|--------------|------------|-----------------|------------|
-| 50K samples  | ~500MB     | 5-10 minutes    | 4GB        |
-| 500K samples | ~5GB       | 30-60 minutes   | 8GB        |
-| 5M samples   | ~50GB      | 3-6 hours       | 16GB+      |
-
-## 8. Troubleshooting
-
-### Common Issues:
+### For Better Performance
+Consider upgrading vocabulary size:
 ```bash
-# If Kaggle download fails
-kaggle datasets download -d snapcrack/all-the-news --force
-
-# If processing runs out of memory
-python prepare_large_dataset.py dataset.csv --max-samples 100000  # Limit samples
-
-# If vocabulary is too large
-python prepare_large_dataset.py dataset.csv --vocab-size 10000  # Smaller vocab
+# Current vocab (1,783) is small for production
+# Recommend 8,000-32,000 for better text quality
+# Note: Requires retraining from scratch
 ```
+
+### For Specialized Applications
+| Use Case | Recommended Dataset | Samples | Training Time |
+|----------|-------------------|---------|---------------|
+| **General AI** | intermediate preset | 150k | 6-12 hours |
+| **Educational** | Current (Wikipedia) | 90k | ✅ **Current** |
+| **Conversational** | conversational preset | 200k | 12-24 hours |
+| **Technical** | technical preset | 100k | 4-8 hours |
+| **Creative Writing** | creative preset | 80k | 4-6 hours |
+
+## 💾 Storage & Performance
+
+### Current Setup Requirements
+| Component | Size | Status |
+|-----------|------|--------|
+| Raw data | ~150MB | ✅ Ready |
+| Processed data | ~50MB | ✅ Ready |
+| Model checkpoints | ~2GB | ✅ Auto-managed |
+| Tokenizer | <1MB | ✅ Ready |
+
+### Scaling Up Requirements
+| Dataset Size | Disk Space | Processing Time | VRAM | Training Time |
+|--------------|------------|-----------------|------|---------------|
+| **Current (90k)** | **200MB** | **✅ Done** | **8GB** | **6-12 hours** |
+| Intermediate (150k) | 500MB | 10-20 min | 8GB | 12-24 hours |
+| Advanced (500k) | 2GB | 1-2 hours | 12GB | 48-96 hours |
+
+## 🔍 Troubleshooting
+
+### Common Dataset Issues
+```bash
+# Check if dataset is properly loaded
+python -c "
+import os
+print('Train file:', os.path.exists('data/processed/train.txt'))
+print('Val file:', os.path.exists('data/processed/val.txt'))  
+print('Tokenizer:', os.path.exists('data/processed/tokenizer.json'))
+"
+
+# If files are missing, re-run current setup:
+python prepare_large_dataset.py
+```
+
+### Performance Issues
+```bash
+# If training is slow, check:
+nvidia-smi                    # GPU utilization
+ls models/l1-gpu-compatible/  # Checkpoints being saved
+
+# If out of memory, reduce batch size:
+# Edit configs/train_config_gpu.yaml → batch_size: 4
+```
+
+## ✅ Recommendations
+
+### For Immediate Use
+Keep your current setup - it's well-optimized:
+- ✅ High-quality Wikipedia Simple dataset  
+- ✅ Proper vocabulary and tokenization
+- ✅ Ready for GPU training
+- ✅ Good for development and experimentation
+
+### For Future Improvements
+Consider these upgrades after current training:
+1. **Increase vocabulary**: 1783 → 8000+ tokens (better text quality)
+2. **Add more data**: intermediate preset for more diverse training
+3. **Specialized datasets**: Match your specific use case
+
+Your current setup is excellent for learning and development!

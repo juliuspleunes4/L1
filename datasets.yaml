@@ -1,5 +1,15 @@
 # 📊 L1 Dataset Registry
-# Voeg hier gemakkelijk nieuwe datasets toe!
+# This file defines a collection of datasets for training language models.
+# It includes metadata for each dataset, such as name, description, download method, and recommended usage.
+# The datasets are categorized into various types like Wikipedia, News, Literature, Code, Social Media, Scientific, and Mixed.
+# Each dataset entry provides information on how to download, the expected format, and the quality of the data.
+# The file also includes presets for different training scenarios, such as beginner, intermediate, advanced, conversational, technical, and knowledge-rich AI.
+# This registry is designed to help users easily find and utilize datasets for their language model training needs.
+
+# @file: datasets.yaml
+# @date: 07/2025
+# @author: J.J.G. Pleunes
+# @version: 1.0
 
 datasets:
   # Wikipedia datasets
