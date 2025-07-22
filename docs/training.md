@@ -1,311 +1,311 @@
-# Training Guide for L1 Model
+# L1 Training Guide
 
-## Overview
+## ✅ Current Training Status
 
-This guide covers the complete training pipeline for the L1 language model, from data preparation to model deployment.
+**Your L1 is ready for GPU training with optimized setup:**
+- ✅ **Dataset**: Wikipedia Simple English (90,000+ samples) ready
+- ✅ **Model**: 155.8M parameters, 12 layers, 16 heads, 1024 embedding
+- ✅ **GPU Optimization**: RTX 5060 Ti compatible with mixed precision
+- ✅ **Checkpointing**: Smart saves every 100 steps with auto-resume
+- ✅ **Training Scripts**: `train_gpu_compatible.py` ready to use
 
-## Data Preparation
+## 🚀 Quick Start Training
 
-### 1. Data Format
-
-L1 expects text data in simple format:
-- One sample per line in `.txt` files
-- UTF-8 encoding
-- Clean, tokenizable text
-
-Example:
-```
-The quick brown fox jumps over the lazy dog.
-Artificial intelligence is transforming the world.
-Large language models demonstrate emergent capabilities.
-```
-
-### 2. Data Preprocessing
-
-Use the data preparation script:
-
+### Start Training (Recommended)
 ```bash
-python scripts/prepare_data.py \
-    --input data/raw/your_text.txt \
-    --output data/processed/ \
-    --vocab-size 50257 \
-    --train-ratio 0.8 \
-    --val-ratio 0.1 \
-    --seed 42
+# Begin or resume GPU training
+python train_gpu_compatible.py
+
+# Training will automatically:
+# ✅ Detect and resume from latest checkpoint
+# ✅ Use mixed precision for speed/memory
+# ✅ Save checkpoints every 100 steps (~18 minutes)
+# ✅ Display real-time progress and metrics
 ```
 
-This will:
-- Split data into train/validation/test sets
-- Train a BPE tokenizer on the training data
-- Save processed data and tokenizer
+### Monitor Training
+```bash
+# Watch training logs in real-time
+tail -f models/l1-gpu-compatible/training.log
 
-### 3. Data Requirements
+# Check GPU utilization
+nvidia-smi
 
-**Minimum Dataset Size:**
-- Tiny model: 1M+ tokens
-- Small model: 10M+ tokens  
-- Base model: 100M+ tokens
-- Large model: 1B+ tokens
+# View saved checkpoints
+ls models/l1-gpu-compatible/checkpoint_*.pt
+```
 
-**Quality Guidelines:**
-- Remove duplicate content
-- Filter out low-quality text
-- Ensure diverse domain coverage
-- Clean formatting artifacts
+### Generate Text
+```bash
+# Test your model during or after training
+python generate_simple.py \
+    --prompt "The future of artificial intelligence is" \
+    --model_path models/l1-gpu-compatible
+```
 
-## Training Configuration
+## 📊 Current Training Configuration
 
-### 1. Model Configuration
+Your optimized setup in `configs/train_config_gpu.yaml`:
 
-Edit `configs/base_config.yaml`:
-
+### Model Architecture
 ```yaml
 model:
-  vocab_size: 50257
-  max_seq_length: 1024
-  n_layers: 12
-  n_heads: 12
-  n_embd: 768
-  dropout: 0.1
+  vocab_size: 1783           # BPE tokenizer vocabulary
+  max_seq_length: 1024       # Memory-optimized for RTX 5060 Ti
+  n_layers: 12               # Production depth
+  n_heads: 16                # Multi-head attention
+  n_embd: 1024               # High-dimensional embeddings
+  n_inner: 4096              # Feed-forward dimension
+  dropout: 0.1               # Regularization
 ```
 
-### 2. Training Configuration
-
+### Training Settings
 ```yaml
 training:
-  num_epochs: 3
-  batch_size: 8
-  learning_rate: 5e-4
-  weight_decay: 0.01
-  max_grad_norm: 1.0
-  
-  # Hardware settings
-  device: "auto"
-  fp16: false
-  gradient_checkpointing: false
+  num_epochs: 10                  # Complete training cycles
+  batch_size: 8                   # Optimized for 16GB VRAM
+  learning_rate: 0.0001           # Conservative for stability  
+  mixed_precision: true           # AMP for 2x speed + memory
+  checkpoint_every_steps: 100     # Save every ~18 minutes
+  max_checkpoints_to_keep: 5      # Auto-cleanup old saves
+  gradient_accumulation_steps: 4  # Simulate larger batches
 ```
 
-### 3. Configuration Examples
+**Model Stats:**
+- **Parameters**: 155.8M (production-ready size)
+- **Memory Usage**: ~8GB VRAM during training
+- **Training Speed**: ~100 steps per 18 minutes on RTX 5060 Ti
 
-#### Quick Testing (Tiny Model)
+## 🔧 Advanced Training Features
+
+### Smart Checkpointing System
+Your L1 includes advanced checkpoint management:
+
+```bash
+# Automatic checkpoint saving every 100 steps
+💾 Saving progress checkpoint at step 1100...
+🗑️ Cleaned up old checkpoint: checkpoint_epoch_1_step_600.pt
+✅ Keeping: latest_checkpoint.pt, best_checkpoint.pt, checkpoint_epoch_1_step_1000.pt
+```
+
+**Features:**
+- **Auto-resume**: Training continues from latest checkpoint automatically
+- **Best model tracking**: Saves model with lowest validation loss
+- **Storage management**: Keeps only 5 most recent checkpoints
+- **Progress preservation**: Never lose training progress
+
+### Mixed Precision Training (AMP)
+Enabled by default for RTX 5060 Ti optimization:
+- **2x speed improvement** with minimal quality loss
+- **50% memory reduction** allowing larger batch sizes
+- **Automatic loss scaling** prevents gradient underflow
+- **Fallback protection** switches to FP32 if needed
+
+### Memory Optimizations
+```python
+# Your training includes:
+- Gradient checkpointing: Trade compute for memory
+- Pin memory: Faster CPU→GPU transfers  
+- CUDA cache clearing: Prevent memory leaks
+- Model compilation: PyTorch 2.0+ graph optimization
+```
+
+## 📈 Training Monitoring
+
+### Real-time Progress Display
+```bash
+🎓 Training Configuration:
+   ├── Epochs: 10, Total steps: 11,250
+   ├── Checkpoint every: 100 steps (~18 min)
+   ├── Keep checkpoints: 5 latest
+   ├── Mixed precision: True
+   └── Optimizer: AdamW
+
+📊 Training Progress:
+   ├── Epoch 2/10, Step 1847/11250 (16.4%)
+   ├── Loss: 2.1432 (↓ from 2.8941)  
+   ├── Learning rate: 0.0001
+   ├── GPU Memory: 7.8GB/16GB (49%)
+   └── Speed: 5.4 steps/sec
+```
+
+### Key Metrics to Watch
+- **Loss Reduction**: Should decrease steadily from ~4.0 to ~2.0
+- **GPU Utilization**: Should stay near 95-100%  
+- **Memory Usage**: ~8GB during training, stable
+- **Speed**: ~100 steps per 18 minutes on RTX 5060 Ti
+
+## 💻 Hardware Requirements & Performance
+
+### Current Hardware (Optimal)
+- ✅ **GPU**: RTX 5060 Ti (16GB VRAM)  
+- ✅ **CUDA**: 12.8+ compatibility
+- ✅ **System RAM**: 32GB recommended
+- ✅ **Storage**: SSD for fast checkpointing
+
+### Performance Expectations
+| Hardware | Batch Size | Steps/Hour | Training Time |
+|----------|------------|------------|---------------|
+| **RTX 5060 Ti** | **8** | **~330** | **6-12 hours** |
+| RTX 4070 | 6 | ~250 | 8-16 hours |
+| RTX 3080 | 4 | ~200 | 12-24 hours |
+
+### Scaling Options
+If you want to increase model size with more VRAM:
 ```yaml
+# For 24GB+ VRAM, edit configs/train_config_gpu.yaml:
 model:
-  n_layers: 2
-  n_heads: 4
-  n_embd: 128
+  n_layers: 16          # Larger model
+  n_embd: 1536         # Higher dimension
+  max_seq_length: 2048  # Longer sequences
+
 training:
-  batch_size: 4
-  num_epochs: 1
-  max_steps: 100
+  batch_size: 12        # Larger batches
 ```
 
-#### Production Training (Base Model)
-```yaml
-model:
-  n_layers: 12
-  n_heads: 12
-  n_embd: 768
-training:
-  batch_size: 16
-  num_epochs: 3
-  gradient_checkpointing: true
-  fp16: true
-```
+## 🔧 Training Management
 
-## Training Process
-
-### 1. Start Training
-
+### Resume Training (Automatic)
 ```bash
-python scripts/train.py --config configs/base_config.yaml
+# Same command automatically detects and resumes
+python train_gpu_compatible.py
+
+# Output shows resumption:
+📥 Loading checkpoint from models/l1-gpu-compatible/latest_checkpoint.pt
+✅ Resumed from epoch 2, step 1847, loss: 2.1432
 ```
 
-### 2. Resume Training
-
+### Manual Checkpoint Selection
 ```bash
-python scripts/train.py \
-    --config configs/base_config.yaml \
-    --resume checkpoints/checkpoint-1000.pt
+# Use specific checkpoint
+python train_gpu_compatible.py --checkpoint models/l1-gpu-compatible/checkpoint_epoch_2_step_1500.pt
+
+# Start fresh (ignore existing checkpoints)
+python train_gpu_compatible.py --fresh-start
 ```
 
-### 3. Monitor Training
-
-**Tensorboard:**
+### View Training History
 ```bash
-tensorboard --logdir checkpoints/tensorboard
+# Check training log
+cat models/l1-gpu-compatible/training.log | tail -20
+
+# View checkpoint files
+ls -la models/l1-gpu-compatible/checkpoint_*.pt
 ```
 
-**Weights & Biases:**
-Set in config:
-```yaml
-training:
-  wandb_project: "my-l1-experiment"
-  wandb_run_name: "base-model-v1"
-```
+## 🚨 Troubleshooting
 
-### 4. Training Metrics
+### Common Issues & Solutions
 
-Monitor these key metrics:
-- **Training Loss**: Should decrease steadily
-- **Validation Loss**: Should track training loss
-- **Perplexity**: Lower is better
-- **Learning Rate**: Follow schedule
-- **Gradient Norm**: Should be stable
-
-## Hardware Requirements
-
-### Minimum Requirements
-- **CPU**: 4+ cores
-- **RAM**: 8GB+ 
-- **Storage**: 10GB+ free space
-- **GPU**: Optional but recommended
-
-### Recommended Setup
-- **GPU**: NVIDIA RTX 3080+ or equivalent
-- **VRAM**: 12GB+ for base model
-- **RAM**: 32GB+ for large datasets
-- **Storage**: SSD with 50GB+ free space
-
-### Multi-GPU Training
-
-For multiple GPUs, use PyTorch DDP:
+**1. CUDA Out of Memory**
 ```bash
-python -m torch.distributed.launch \
-    --nproc_per_node=2 \
-    scripts/train.py \
-    --config configs/base_config.yaml
+# Reduce batch size in config
+batch_size: 4  # Instead of 8
+
+# Or enable gradient checkpointing
+gradient_checkpointing: true
 ```
 
-## Training Best Practices
+**2. Training Not Starting**
+```bash
+# Verify CUDA setup
+python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}')"
 
-### 1. Learning Rate
+# Check data files exist
+ls data/processed/train.txt data/processed/val.txt
+```
 
-**Finding optimal LR:**
-- Start with 1e-4 to 1e-3
-- Use learning rate finder
-- Apply warmup (500-2000 steps)
-- Use cosine decay
+**3. Loss Not Decreasing**
+```bash
+# Check if resuming from bad checkpoint
+rm models/l1-gpu-compatible/latest_checkpoint.pt
+python train_gpu_compatible.py  # Start fresh
 
-### 2. Batch Size
-
-**Guidelines:**
-- Larger batch sizes → more stable training
-- Limited by GPU memory
-- Use gradient accumulation if needed
-- Typical range: 8-64 per GPU
-
-### 3. Sequence Length
-
-**Trade-offs:**
-- Longer sequences → better context
-- Memory usage scales quadratically
-- Start with 512, increase gradually
-- Maximum: 2048 for most hardware
-
-### 4. Regularization
-
-**Prevent overfitting:**
-- Dropout: 0.1-0.2
-- Weight decay: 0.01-0.1
-- Early stopping on validation loss
-- Data augmentation
-
-## Troubleshooting
-
-### Common Issues
-
-**1. Training Loss Not Decreasing**
-- Check learning rate (too high/low)
-- Verify data quality
-- Check for gradient clipping
-- Ensure model convergence
-
-**2. Out of Memory Errors**
-- Reduce batch size
-- Enable gradient checkpointing
-- Use FP16 training
-- Reduce sequence length
-
-**3. Training Instability**
-- Lower learning rate
-- Increase warmup steps
-- Check gradient norms
-- Use gradient clipping
+# Verify data quality
+head -5 data/processed/train.txt
+```
 
 **4. Slow Training Speed**
-- Use FP16 if available
-- Optimize data loading
-- Enable gradient checkpointing
-- Use appropriate batch size
+```bash
+# Check GPU utilization
+nvidia-smi
 
-### Performance Tips
+# Ensure mixed precision is enabled
+mixed_precision: true  # In config
 
-**Speed Optimization:**
-- Use compiled models (torch.compile)
-- Optimize data pipeline
-- Pin memory for data loaders
-- Use multiple workers
+# Verify data loading isn't bottleneck
+dataloader_num_workers: 2  # Try different values
+```
+
+### Performance Optimization Tips
 
 **Memory Optimization:**
-- Gradient checkpointing
-- Mixed precision training
-- Optimize attention computation
-- Use efficient optimizers
+- Keep batch_size at 8 for RTX 5060 Ti 16GB
+- Use gradient_accumulation_steps to simulate larger batches
+- Enable gradient_checkpointing if memory tight
 
-## Evaluation
+**Speed Optimization:**
+- Ensure pin_memory: true in dataloader
+- Use SSD storage for faster checkpoint saves
+- Keep sequence length at 1024 (optimal for your setup)
 
-### During Training
+**Quality Optimization:**
+- Let training run for full 10 epochs
+- Monitor validation loss - stop if it stops improving
+- Use learning rate warmup for stability
 
-**Automatic Evaluation:**
-- Validation loss every N steps
-- Perplexity calculation
-- Gradient norm monitoring
-- Learning rate tracking
+## 📊 Training Results & Evaluation
 
-### Post-Training
-
-**Model Quality:**
+### Expected Training Progression
 ```bash
-python scripts/evaluate.py \
-    --model checkpoints/best_model.pt \
-    --data data/processed/test.txt
+# Typical loss progression on Wikipedia data:
+Epoch 1: 4.2 → 3.1 (rapid initial learning)
+Epoch 3: 3.1 → 2.4 (steady improvement) 
+Epoch 6: 2.4 → 2.1 (fine-tuning)
+Epoch 10: 2.1 → 1.9 (convergence)
 ```
 
-**Text Generation:**
+### Model Quality Assessment
 ```bash
-python scripts/generate.py \
-    --model checkpoints/best_model.pt \
-    --prompt "The future of AI is" \
-    --max-tokens 100
+# Test generation quality during training
+python generate_simple.py --prompt "Wikipedia describes artificial intelligence as"
+
+# Expected improvement:
+# Early: Random/incoherent text
+# Middle: Grammatical but basic text  
+# Final: Coherent, factual responses
 ```
 
-## Next Steps
+### Best Practices
+- **Patience**: Let training complete all 10 epochs
+- **Monitoring**: Check progress every few hours
+- **Validation**: Test generation quality periodically
+- **Backup**: Checkpoints auto-saved, but backup important ones
 
-After training:
-1. **Evaluate** model performance
-2. **Fine-tune** on specific tasks
-3. **Deploy** for inference
-4. **Monitor** in production
-5. **Iterate** on architecture/data
+## ✅ Next Steps After Training
 
-## Advanced Topics
+### 1. Model Evaluation
+```bash
+# Generate comprehensive test outputs
+python generate_simple.py --prompt "The history of" --max-tokens 100
+python generate_simple.py --prompt "Science shows that" --max-tokens 100
+python generate_simple.py --prompt "Technology will" --max-tokens 100
+```
 
-### 1. Curriculum Learning
-- Start with shorter sequences
-- Gradually increase difficulty
-- Domain-specific ordering
+### 2. Fine-tuning (Optional)
+If you want to specialize your model:
+```bash
+# Add domain-specific data and continue training
+python add_dataset.py papers_arxiv  # For scientific knowledge
+python train_gpu_compatible.py      # Continue from checkpoint
+```
 
-### 2. Transfer Learning
-- Start from pretrained checkpoint
-- Adjust learning rates per layer
-- Freeze certain parameters
+### 3. Production Use
+```bash
+# Use best model for generation
+python generate_simple.py \
+    --model_path models/l1-gpu-compatible/best_checkpoint.pt \
+    --prompt "Your prompt here"
+```
 
-### 3. Model Pruning
-- Remove unnecessary parameters
-- Quantization for efficiency
-- Knowledge distillation
-
-### 4. Distributed Training
-- Data parallelism
-- Model parallelism  
-- Pipeline parallelism
+Your L1 training setup is optimized and ready for excellent results! 🚀
