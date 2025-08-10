@@ -50,12 +50,12 @@ Your optimized setup in `configs/train_config_gpu.yaml`:
 ### Model Architecture
 ```yaml
 model:
-  vocab_size: 1783           # BPE tokenizer vocabulary
-  max_seq_length: 1024       # Memory-optimized for RTX 5060 Ti
+  vocab_size: 32003          # BPE tokenizer vocabulary (32k base + special tokens)
+  max_seq_length: 512        # Memory-optimized for RTX 5060 Ti
   n_layers: 12               # Production depth
-  n_heads: 16                # Multi-head attention
-  n_embd: 1024               # High-dimensional embeddings
-  n_inner: 4096              # Feed-forward dimension
+  n_heads: 12                # Multi-head attention
+  n_embd: 768                # High-dimensional embeddings
+  n_inner: 3072              # Feed-forward dimension (4x embedding)
   dropout: 0.1               # Regularization
 ```
 

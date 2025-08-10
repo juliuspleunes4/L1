@@ -5,7 +5,7 @@
 **Your L1 is already set up with Wikipedia Simple English dataset!**
 - ✅ **90,000+ samples** processed and ready
 - ✅ **High-quality educational content** 
-- ✅ **BPE tokenizer** with 1,783 vocabulary trained
+- ✅ **BPE tokenizer** with 32,003 vocabulary trained (32k base + special tokens)
 - ✅ **Training data** ready in `data/processed/`
 
 ## 📊 Current Dataset Details
@@ -22,7 +22,7 @@
 # Your processed data is ready:
 data/processed/train.txt        # 90,247 training samples
 data/processed/val.txt          # 10,027 validation samples  
-data/processed/tokenizer.json   # BPE tokenizer (1,783 vocab)
+data/processed/tokenizer.json   # BPE tokenizer (32,003 vocab)
 ```
 
 ## 🚀 Ready to Train

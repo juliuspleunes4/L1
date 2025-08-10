@@ -101,6 +101,7 @@ python add_dataset.py --preset advanced
 
 # Step 2: Prepare the dataset with BPE tokenization (for intelligence)
 python prepare_large_dataset.py data/raw/combined_dataset.txt --vocab-size 32000
+# Note: BPE training adds special tokens, resulting in ~32,003 actual vocabulary size
 
 # Step 3: Start GPU training (resume-capable)
 python train_gpu_compatible.py
@@ -112,7 +113,7 @@ python generate_simple.py --model_path models/l1-gpu-compatible --prompt "The fu
 **That's it!** The preset automatically downloads Wikipedia + ArXiv papers, and the BPE tokenization creates a 32k vocabulary for intelligent text understanding and generation.
 
 ### **🧠 Intelligence Features:**
-- **BPE Tokenization**: 32,000 subword tokens instead of 4k characters
+- **BPE Tokenization**: 32,000 base subword tokens (32,003 total with special tokens)
 - **Stable Architecture**: 12 layers optimized for reliability (134M parameters)
 - **Coherent Generation**: Produces meaningful sentences and coherent text
 - **Lightning Fast**: 108x speed improvement (18min→10sec per 100 steps)
@@ -155,7 +156,7 @@ The model and training parameters are configured via YAML files in the `configs/
 ### Stable GPU Training Configuration (`configs/train_config_gpu.yaml`)
 ```yaml
 model:
-  vocab_size: 32000              # BPE tokenization for intelligence
+  vocab_size: 32000              # BPE tokenization for intelligence (actual: ~32,003 with special tokens)
   max_seq_length: 512            # Conservative for system stability
   n_layers: 12                   # Balanced depth for stable training
   n_heads: 12                    # Sufficient attention heads
@@ -571,6 +572,17 @@ Reduce batch size in `configs/train_config_gpu.yaml`:
 ```yaml
 training:
   batch_size: 4  # Reduce from 8 to 4
+```
+
+**9. Vocabulary size mismatch errors (RuntimeError about embeddings)**
+This happens when config files don't match the actual tokenizer vocabulary:
+```bash
+# Check actual tokenizer size
+python -c "import json; data=json.load(open('data/processed/tokenizer.json')); print(f'Actual vocab: {len(data[\"vocab\"])}')"
+
+# The training script automatically handles this, but you can manually update configs:
+# Edit configs/train_config_gpu.yaml and models/*/config.json
+# Set vocab_size to match the actual tokenizer size (typically 32,003 for BPE with special tokens)
 ```
 
 ## 📊 Current Status

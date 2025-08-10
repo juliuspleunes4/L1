@@ -219,6 +219,23 @@ ls data/processed/train.txt data/processed/val.txt
 python prepare_large_dataset.py
 ```
 
+### Vocabulary Size Mismatch Error
+If you see errors like "RuntimeError: size mismatch for embeddings" or "vocab_size mismatch":
+
+```bash
+# 1. Check actual tokenizer vocabulary size
+python -c "import json; data=json.load(open('data/processed/tokenizer.json')); print(f'Actual vocab size: {len(data[\"vocab\"])}')"
+
+# 2. The training script automatically handles this, but if you need to manually fix configs:
+# Edit configs/train_config_gpu.yaml and set vocab_size to match actual tokenizer size
+# Example: vocab_size: 32003  # (for BPE with 32k base + 3 special tokens)
+
+# 3. For saved models, update model config files too:
+# Edit models/*/config.json and set vocab_size to match
+```
+
+**Note**: L1's training script (`train_gpu_compatible.py`) automatically detects and uses the correct vocabulary size from your tokenizer, so this error typically only occurs with manually edited config files.
+
 ## 📚 Documentation
 
 - **[Architecture](docs/architecture.md)**: Model design details

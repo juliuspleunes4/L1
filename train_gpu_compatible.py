@@ -546,7 +546,7 @@ def main():
     
     # Create dataset and dataloader
     print("📊 Loading training data...")
-    train_data_path = config.get('data', {}).get('train_path', 'data/processed/train.txt')
+    train_data_path = config.get('data', {}).get('train_data_path', 'data/processed/train.txt')
     
     if not os.path.exists(train_data_path):
         print(f"❌ Training data not found at {train_data_path}")
@@ -604,7 +604,7 @@ def main():
     print("="*60)
     
     # Setup output directory
-    output_dir = config.get('output', {}).get('model_dir', './models/l1-gpu-compatible')
+    output_dir = config.get('training', {}).get('output_dir', './models/l1-gpu-compatible')
     os.makedirs(output_dir, exist_ok=True)
     setup_logging(output_dir)
     

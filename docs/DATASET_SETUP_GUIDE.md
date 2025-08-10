@@ -3,7 +3,7 @@
 ## 🚀 Current Status
 L1 is already set up with **Wikipedia Simple English** dataset:
 - ✅ **90,000+ high-quality samples** ready for training
-- ✅ **BPE tokenizer** with 1783 vocabulary (pre-trained)
+- ✅ **BPE tokenizer** with 32,003 vocabulary (32k base + special tokens)
 - ✅ **Preprocessed data** in `data/processed/`
 
 ## 🎯 Quick Dataset Options
@@ -239,8 +239,8 @@ Keep your current setup - it's well-optimized:
 
 ### For Future Improvements
 Consider these upgrades after current training:
-1. **Increase vocabulary**: 1783 → 8000+ tokens (better text quality)
+1. **Vocabulary optimization**: Current 32k vocab is already excellent for quality
 2. **Add more data**: intermediate preset for more diverse training
 3. **Specialized datasets**: Match your specific use case
 
-Your current setup is excellent for learning and development!
+Your current setup with 32k BPE vocabulary is production-ready!

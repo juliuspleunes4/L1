@@ -3,7 +3,7 @@
 
 # Model configuration - intelligent but stable
 model:
-  vocab_size: 32000         # BPE tokenization for intelligence
+  vocab_size: 32003         # Actual BPE tokenizer size (32000 + 3 special tokens)
   max_seq_length: 512       # Conservative for stability (was 1024)
   n_layers: 12              # Reduced from 16 for stability
   n_heads: 12               # Reduced from 16 for stability
