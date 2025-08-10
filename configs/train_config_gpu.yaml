@@ -38,6 +38,7 @@ training:
 # Data configuration - conservative
 data:
   train_data_path: "data/processed/train.txt"
+  tokenizer_path: "data/processed/tokenizer.json"  # BPE tokenizer from prepare_large_dataset.py
   max_length: 512           # Match model max_seq_length
   
 # Performance optimizations - minimal

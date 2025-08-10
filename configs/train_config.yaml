@@ -87,6 +87,7 @@ data:
   
   # Tokenizer settings
   tokenizer_type: "bpe"
+  tokenizer_path: "data/processed/tokenizer.json"  # BPE tokenizer from prepare_large_dataset.py
   vocab_size: 1000
   
   # Data processing
