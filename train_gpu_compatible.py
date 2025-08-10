@@ -56,7 +56,8 @@ except ImportError:
     print("ℹ️  Warning manager not found - some warnings may appear")
 
 # Import the core model components from train_minimal
-from train_minimal import L1Config, L1Model, SimpleTokenizer, SimpleTextDataset
+from train_minimal import L1Config, L1Model, SimpleTextDataset
+from src.data.tokenizer import BPETokenizer
 
 def load_config(config_path: str) -> dict:
     """Load configuration from YAML file"""
@@ -495,14 +496,15 @@ def main():
     
     # Load tokenizer
     tokenizer_path = config.get('data', {}).get('tokenizer_path', './data/processed/tokenizer.json')
-    print(f"📝 Loading tokenizer from {tokenizer_path}")
+    print(f"📝 Loading BPE tokenizer from {tokenizer_path}")
     
     if not os.path.exists(tokenizer_path):
         print(f"❌ Tokenizer not found at {tokenizer_path}")
-        print("💡 Please run data preparation first!")
+        print("💡 Please run: python prepare_large_dataset.py <your_data_file> --vocab-size 32000")
         return
     
-    tokenizer = SimpleTokenizer(tokenizer_path)
+    tokenizer = BPETokenizer.load(tokenizer_path)
+    print(f"✅ Loaded BPE tokenizer with {len(tokenizer.vocab)} tokens")
     
     # Calculate vocab size
     vocab_size = len(tokenizer.vocab)

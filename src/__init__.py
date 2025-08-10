@@ -38,15 +38,13 @@ __email__ = "l1@example.com"
 
 from .models import L1Model, L1Config
 from .training import Trainer, TrainingConfig
-from .inference import InferenceEngine
-from .data import TextDataset, Tokenizer
+from .data import TextDataset, BPETokenizer
 
 __all__ = [
     "L1Model",
     "L1Config", 
     "Trainer",
     "TrainingConfig",
-    "InferenceEngine",
     "TextDataset",
-    "Tokenizer",
+    "BPETokenizer",
 ]

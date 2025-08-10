@@ -379,8 +379,13 @@ class BPETokenizer(Tokenizer):
         tokenizer.vocab = tokenizer_data['vocab']
         tokenizer.id_to_token = {int(idx): token for token, idx in tokenizer.vocab.items()}
         
-        # Convert string keys back to tuples
-        tokenizer.merges = {tuple(k.split(' ', 1)): v for k, v in tokenizer_data['merges'].items()}
+        # Handle merges if they exist (for custom format), otherwise initialize empty
+        if 'merges' in tokenizer_data:
+            # Convert string keys back to tuples
+            tokenizer.merges = {tuple(k.split(' ', 1)): v for k, v in tokenizer_data['merges'].items()}
+        else:
+            # No merges available (HuggingFace format), initialize empty
+            tokenizer.merges = {}
         
         return tokenizer
     
