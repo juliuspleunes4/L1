@@ -146,19 +146,58 @@ class DatasetProcessor:
         
         return texts
     
-    def create_vocabulary(self, texts: List[str], vocab_size: int = 10000) -> dict:
-        """Create character-level vocabulary from texts"""
-        print(f"Creating vocabulary (target size: {vocab_size:,})...")
+    def create_vocabulary(self, texts: List[str], vocab_size: int = 32000) -> dict:
+        """Create BPE vocabulary from texts for better intelligence"""
+        print(f"Creating BPE vocabulary (target size: {vocab_size:,})...")
         
-        # Count character frequencies
-        char_counts = {}
-        for text in tqdm(texts, desc="Counting characters"):
-            for char in text.lower():
-                char_counts[char] = char_counts.get(char, 0) + 1
+        try:
+            from tokenizers import Tokenizer, models, trainers, pre_tokenizers
+            
+            # Initialize BPE tokenizer
+            tokenizer = Tokenizer(models.BPE())
+            tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
+            
+            # Set up trainer
+            trainer = trainers.BpeTrainer(
+                vocab_size=vocab_size,
+                special_tokens=["<pad>", "<unk>", "<bos>", "<eos>"]
+            )
+            
+            # Train on texts
+            print("Training BPE tokenizer...")
+            tokenizer.train_from_iterator(tqdm(texts, desc="Training BPE"), trainer)
+            
+            # Extract vocabulary
+            vocab = tokenizer.get_vocab()
+            print(f"BPE vocabulary created with {len(vocab):,} tokens")
+            
+            # Show sample tokens
+            sample_tokens = list(vocab.keys())[:20]
+            print(f"   Sample tokens: {sample_tokens}")
+            
+            return vocab
+            
+        except ImportError:
+            print("⚠️  BPE tokenizer not available, falling back to word-level tokenization...")
+            return self.create_word_vocabulary(texts, vocab_size)
+    
+    def create_word_vocabulary(self, texts: List[str], vocab_size: int = 32000) -> dict:
+        """Create word-level vocabulary as fallback"""
+        print(f"Creating word-level vocabulary (target size: {vocab_size:,})...")
         
-        # Sort by frequency and take top characters
-        sorted_chars = sorted(char_counts.items(), key=lambda x: x[1], reverse=True)
-        top_chars = [char for char, count in sorted_chars[:vocab_size-4]]  # -4 for special tokens
+        # Count word frequencies
+        word_counts = {}
+        for text in tqdm(texts, desc="Counting words"):
+            words = text.lower().split()
+            for word in words:
+                # Clean word
+                word = ''.join(c for c in word if c.isalnum() or c in "'-")
+                if len(word) > 1:
+                    word_counts[word] = word_counts.get(word, 0) + 1
+        
+        # Sort by frequency and take top words
+        sorted_words = sorted(word_counts.items(), key=lambda x: x[1], reverse=True)
+        top_words = [word for word, count in sorted_words[:vocab_size-4]]  # -4 for special tokens
         
         # Create vocabulary with special tokens
         vocab = {
@@ -168,11 +207,11 @@ class DatasetProcessor:
             '<eos>': 3
         }
         
-        for i, char in enumerate(top_chars):
-            vocab[char] = i + 4
+        for i, word in enumerate(top_words):
+            vocab[word] = i + 4
         
-        print(f"Vocabulary created with {len(vocab):,} tokens")
-        print(f"   Most common characters: {list(top_chars[:20])}")
+        print(f"Word vocabulary created with {len(vocab):,} tokens")
+        print(f"   Most common words: {list(top_words[:20])}")
         
         return vocab
     
@@ -231,8 +270,8 @@ def main():
                        help="Field name for text data (JSON)")
     parser.add_argument("--max-samples", type=int, 
                        help="Maximum number of samples to process")
-    parser.add_argument("--vocab-size", type=int, default=10000,
-                       help="Vocabulary size")
+    parser.add_argument("--vocab-size", type=int, default=32000,
+                       help="Vocabulary size (32000 recommended for intelligence)")
     parser.add_argument("--output-dir", default="data/processed",
                        help="Output directory")
     parser.add_argument("--split-ratio", type=float, default=0.9,

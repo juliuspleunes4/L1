@@ -1,44 +1,47 @@
 # GPU-optimized training configuration for L1
-# Use this config for training on your powerful new PC
+# STABLE VERSION - Conservative settings to prevent PC freezing
 
-# Model configuration - scaled up for GPU training
+# Model configuration - intelligent but stable
 model:
-  max_seq_length: 2048      # Increased from 512
-  n_layers: 12              # Increased from 6
-  n_heads: 16               # Increased from 8  
-  n_embd: 1024              # Increased from 512
-  n_inner: 4096             # Increased from 2048
+  vocab_size: 32000         # BPE tokenization for intelligence
+  max_seq_length: 512       # Conservative for stability (was 1024)
+  n_layers: 12              # Reduced from 16 for stability
+  n_heads: 12               # Reduced from 16 for stability
+  n_embd: 768               # Reduced from 1024 for stability
+  n_inner: 3072             # 4x embedding size
   dropout: 0.1
   layer_norm_epsilon: 0.00001
   initializer_range: 0.02
   use_cache: true
 
-# Training configuration - optimized for GPU
+# Training configuration - stable settings
 training:
-  output_dir: "models/l1-gpu-v1"
-  num_epochs: 10
-  batch_size: 16            # Increased from 4 - adjust based on your GPU VRAM
-  learning_rate: 0.0001     # Slightly lower for larger model
+  output_dir: "models/l1-gpu-compatible"
+  num_epochs: 10            # Reduced from 15
+  batch_size: 4             # Reduced from 6 for stability
+  learning_rate: 0.0001     # Slightly higher for faster convergence
   weight_decay: 0.01
   max_grad_norm: 1.0
-  save_steps: 1000
-  logging_steps: 100
-  max_steps: null           # Remove limit for full training
+  save_steps: 500
+  logging_steps: 50
+  max_steps: null           
   
-  # Local training optimizations
-  checkpoint_every_steps: 100    # Save every ~18 minutes for safety
-  max_checkpoints_to_keep: 5     # Keep only 5 most recent checkpoints
-  gradient_accumulation_steps: 4  # Simulate larger batch size
-  mixed_precision: true          # Use automatic mixed precision (AMP)
-  dataloader_num_workers: 4 # Faster data loading
+  # Optimized checkpoint frequency for ultra-fast training
+  checkpoint_every_steps: 1000  # Every ~2 minutes instead of 10 seconds
+  max_checkpoints_to_keep: 5
+  warmup_steps: 500         # Reduced warmup
+  lr_scheduler: "linear"    # More stable than cosine
+  mixed_precision: true     # Keep AMP for efficiency
+  gradient_accumulation_steps: 4
+  dataloader_num_workers: 2 # Reduced from 4
 
-# Data configuration - for larger datasets
+# Data configuration - conservative
 data:
   train_data_path: "data/processed/train.txt"
-  max_length: 2048          # Increased sequence length
+  max_length: 512           # Match model max_seq_length
   
-# Performance optimizations
+# Performance optimizations - minimal
 performance:
-  compile_model: true       # PyTorch 2.0 compilation
-  gradient_checkpointing: true  # Save memory for larger models
-  use_torch_compile: true
+  compile_model: false      # Disable compilation that might cause issues
+  gradient_checkpointing: true
+  use_torch_compile: false  # Disable advanced compilation

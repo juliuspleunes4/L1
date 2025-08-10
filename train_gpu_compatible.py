@@ -524,7 +524,7 @@ def main():
         n_heads=model_config_base.get('n_heads', 16),
         n_embd=model_config_base.get('n_embd', 1024),
         n_inner=model_config_base.get('n_inner', 4096),
-        **{k: v for k, v in model_config_base.items() if k not in ['max_seq_length', 'n_layers', 'n_heads', 'n_embd', 'n_inner']}
+        **{k: v for k, v in model_config_base.items() if k not in ['vocab_size', 'max_seq_length', 'n_layers', 'n_heads', 'n_embd', 'n_inner']}
     )
     
     print("🏗️  Creating model...")
