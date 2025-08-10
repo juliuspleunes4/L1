@@ -242,6 +242,7 @@ class DatasetProcessor:
         # Save vocabulary
         vocab_data = {
             'vocab': vocab,
+            'vocab_size': len(vocab),  # Add missing vocab_size field - required for L1 training (DO NOT REMOVE!)
             'special_tokens': {
                 '<pad>': 0,
                 '<unk>': 1,
