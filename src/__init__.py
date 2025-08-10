@@ -33,8 +33,8 @@ SOFTWARE.
 """
 
 __version__ = "0.1.0"
-__author__ = "L1 Development Team"
-__email__ = "l1@example.com"
+__author__ = "J.J.G. Pleunes"
+__email__ = "jjgpleunes@gmail.com"
 
 from .models import L1Model, L1Config
 from .training import Trainer, TrainingConfig
