@@ -91,7 +91,7 @@ L1/
 
 ## 🎯 Quick Start
 
-Ready to train your own language model? Here's the fastest way:
+Ready to train your own intelligent language model? Here's the fastest way:
 
 ### **🚀 4-Step Quick Start**
 
@@ -102,20 +102,21 @@ python add_dataset.py --preset advanced
 # Step 2: Prepare the dataset with BPE tokenization (for intelligence)
 python prepare_large_dataset.py data/raw/combined_dataset.txt --vocab-size 32000
 
-# Step 3: Start GPU training
+# Step 3: Start GPU training (resume-capable)
 python train_gpu_compatible.py
 
 # Step 4: Generate text with your trained model
-python generate_simple.py --prompt "The future of AI is"
+python generate_simple.py --model_path models/l1-gpu-compatible --prompt "The future of AI is"
 ```
 
 **That's it!** The preset automatically downloads Wikipedia + ArXiv papers, and the BPE tokenization creates a 32k vocabulary for intelligent text understanding and generation.
 
 ### **🧠 Intelligence Features:**
 - **BPE Tokenization**: 32,000 subword tokens instead of 4k characters
-- **Stable Architecture**: 12 layers optimized for reliability (140M parameters)
-- **Coherent Generation**: Produces meaningful sentences, not character soup
-- **Lightning Fast**: 108x speed improvement since its original design 
+- **Stable Architecture**: 12 layers optimized for reliability (134M parameters)
+- **Coherent Generation**: Produces meaningful sentences and coherent text
+- **Lightning Fast**: 108x speed improvement (18min→10sec per 100 steps)
+- **Auto-Resume**: Training automatically resumes from latest checkpoint 
 
 ---
 
@@ -142,7 +143,7 @@ L1 implements a decoder-only transformer architecture with:
 | Model | Layers | Heads | Embedding | Parameters | GPU Memory | Use Case | Config File |
 |-------|---------|-------|-----------|------------|------------|----------|-------------|
 | Small | 6      | 8     | 512       | ~25M       | 4GB        | Experiments | `train_config.yaml` |
-| **L1 Stable** | **12** | **12** | **768** | **~140M** | **8GB** | **Stable Training** | **`train_config_gpu.yaml`** |
+| **L1 Stable** | **12** | **12** | **768** | **~134M** | **8GB** | **Stable Training** | **`train_config_gpu.yaml`** |
 | L1 Large | 16     | 16    | 1024      | ~220M      | 12GB       | Advanced (experimental) | Custom config |
 
 > **Note**: L1 Stable model uses BPE tokenization (32k vocab) with conservative settings to prevent system freezing. Still intelligent but prioritizes stability.

@@ -34,6 +34,202 @@ import os
 import torch
 import json
 import argparse
+import sys
+import regex as re
+from typing import List, Dict, Optional, Union, Tuple
+from collections import Counter, defaultdict
+
+# Load the BPE tokenizer class definition directly
+# (copying essential parts to avoid complex imports)
+
+class BPETokenizer:
+    """Simplified BPE tokenizer for text generation."""
+    
+    def __init__(self, vocab_size: int = 50257, special_tokens: Optional[Dict[str, int]] = None):
+        self.vocab_size = vocab_size
+        self.special_tokens = special_tokens or {
+            '<pad>': 0,
+            '<unk>': 1, 
+            '<bos>': 2,
+            '<eos>': 3,
+        }
+        
+        # Initialize vocabulary with special tokens
+        self.vocab = {token: idx for token, idx in self.special_tokens.items()}
+        self.id_to_token = {idx: token for token, idx in self.vocab.items()}
+        
+        # BPE merges
+        self.merges = {}
+        self.byte_encoder = self._bytes_to_unicode()
+        self.byte_decoder = {v: k for k, v in self.byte_encoder.items()}
+        
+        # Patterns for text preprocessing
+        self.pat = re.compile(
+            r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+        )
+    
+    def _bytes_to_unicode(self) -> Dict[int, str]:
+        """Create a mapping from bytes to unicode characters."""
+        bs = list(range(ord("!"), ord("~")+1)) + \
+             list(range(ord("¡"), ord("¬")+1)) + \
+             list(range(ord("®"), ord("ÿ")+1))
+        
+        cs = bs[:]
+        n = 0
+        for b in range(2**8):
+            if b not in bs:
+                bs.append(b)
+                cs.append(2**8 + n)
+                n += 1
+        
+        cs = [chr(n) for n in cs]
+        return dict(zip(bs, cs))
+    
+    def _get_pairs(self, word: Tuple[str, ...]) -> set:
+        """Get all pairs of consecutive symbols in word."""
+        pairs = set()
+        prev_char = word[0]
+        for char in word[1:]:
+            pairs.add((prev_char, char))
+            prev_char = char
+        return pairs
+    
+    def _bpe(self, token: str) -> str:
+        """Apply BPE to a token."""
+        if token in self.vocab:
+            return token
+        
+        word = tuple(token)
+        pairs = self._get_pairs(word)
+        
+        if not pairs:
+            return token
+        
+        while True:
+            bigram = min(pairs, key=lambda pair: self.merges.get(pair, float('inf')))
+            if bigram not in self.merges:
+                break
+            
+            first, second = bigram
+            new_word = []
+            i = 0
+            
+            while i < len(word):
+                try:
+                    j = word.index(first, i)
+                    new_word.extend(word[i:j])
+                    i = j
+                except ValueError:
+                    new_word.extend(word[i:])
+                    break
+                
+                if word[i] == first and i < len(word) - 1 and word[i + 1] == second:
+                    new_word.append(first + second)
+                    i += 2
+                else:
+                    new_word.append(word[i])
+                    i += 1
+            
+            new_word = tuple(new_word)
+            word = new_word
+            
+            if len(word) == 1:
+                break
+            else:
+                pairs = self._get_pairs(word)
+        
+        return ' '.join(word)
+    
+    def encode(self, text: str) -> List[int]:
+        """Encode text to token IDs."""
+        bpe_tokens = []
+        
+        for token in re.findall(self.pat, text):
+            token_bytes = token.encode('utf-8')
+            token_unicode = ''.join(self.byte_encoder[b] for b in token_bytes)
+            
+            bpe_token = self._bpe(token_unicode)
+            bpe_tokens.extend(bpe_token.split(' '))
+        
+        # Convert to IDs
+        token_ids = []
+        for token in bpe_tokens:
+            if token in self.vocab:
+                token_ids.append(self.vocab[token])
+            else:
+                token_ids.append(self.vocab['<unk>'])
+        
+        return token_ids
+    
+    def decode(self, token_ids: List[int]) -> str:
+        """Decode token IDs to text."""
+        tokens = []
+        for token_id in token_ids:
+            if token_id in self.id_to_token:
+                tokens.append(self.id_to_token[token_id])
+            else:
+                tokens.append('<unk>')
+        
+        text = ''.join(tokens)
+        
+        # Decode bytes
+        try:
+            text_bytes = bytearray([self.byte_decoder[c] for c in text])
+            return text_bytes.decode('utf-8', errors='replace')
+        except KeyError:
+            return text
+    
+    @classmethod
+    def load(cls, path: str) -> 'BPETokenizer':
+        """Load tokenizer from file."""
+        with open(path, 'r', encoding='utf-8') as f:
+            tokenizer_data = json.load(f)
+        
+        # Handle different tokenizer formats
+        special_tokens = tokenizer_data.get('special_tokens', {
+            '<pad>': 0,
+            '<unk>': 1, 
+            '<bos>': 2,
+            '<eos>': 3,
+        })
+        
+        vocab_size = tokenizer_data.get('vocab_size', len(tokenizer_data['vocab']))
+        
+        tokenizer = cls(
+            vocab_size=vocab_size,
+            special_tokens=special_tokens
+        )
+        
+        tokenizer.vocab = tokenizer_data['vocab']
+        tokenizer.id_to_token = {int(idx): token for token, idx in tokenizer.vocab.items()}
+        
+        # Handle merges if present (for full BPE) or empty dict for simple vocab
+        if 'merges' in tokenizer_data:
+            tokenizer.merges = {tuple(k.split(' ', 1)): v for k, v in tokenizer_data['merges'].items()}
+        else:
+            tokenizer.merges = {}
+        
+        return tokenizer
+    
+    @property
+    def pad_token_id(self) -> int:
+        """Get padding token ID."""
+        return self.special_tokens.get('<pad>', 0)
+    
+    @property
+    def unk_token_id(self) -> int:
+        """Get unknown token ID."""
+        return self.special_tokens.get('<unk>', 1)
+    
+    @property
+    def bos_token_id(self) -> int:
+        """Get beginning of sequence token ID."""
+        return self.special_tokens.get('<bos>', 2)
+    
+    @property
+    def eos_token_id(self) -> int:
+        """Get end of sequence token ID."""
+        return self.special_tokens.get('<eos>', 3)
 
 # Copy the model classes from training script
 class L1Config:
@@ -184,50 +380,34 @@ class MLP(nn.Module):
         x = self.fc2(x)
         return x
 
-class SimpleTokenizer:
-    def __init__(self, vocab_file):
-        with open(vocab_file, 'r') as f:
-            data = json.load(f)
-        
-        self.vocab = data['vocab']
-        self.id_to_token = {v: k for k, v in self.vocab.items()}
-        self.pad_token_id = data['special_tokens']['<pad>']
-        self.eos_token_id = data['special_tokens']['<eos>']
-        self.bos_token_id = data['special_tokens']['<bos>']
-        self.unk_token_id = data['special_tokens']['<unk>']
+def load_tokenizer(model_dir):
+    """Load the BPE tokenizer from the model directory."""
+    tokenizer_path = os.path.join(model_dir, 'tokenizer.json')
     
-    def encode(self, text):
-        # Simple character-level tokenization for demo
-        tokens = [self.bos_token_id]
-        for char in text.lower():
-            if char in self.vocab:
-                tokens.append(self.vocab[char])
-            else:
-                tokens.append(self.unk_token_id)
-        return tokens
+    if not os.path.exists(tokenizer_path):
+        raise FileNotFoundError(f"Tokenizer not found at {tokenizer_path}")
     
-    def decode(self, token_ids):
-        tokens = []
-        for token_id in token_ids:
-            if token_id in self.id_to_token:
-                token = self.id_to_token[token_id]
-                if token not in ['<pad>', '<bos>', '<eos>', '<unk>']:
-                    tokens.append(token)
-        return ''.join(tokens)
+    print(f"Loading BPE tokenizer from {tokenizer_path}")
+    tokenizer = BPETokenizer.load(tokenizer_path)
+    print(f"Tokenizer loaded with vocab size: {len(tokenizer.vocab)}")
+    
+    return tokenizer
 
 
 def generate_text(model, tokenizer, prompt, max_new_tokens=50, temperature=0.8):
     model.eval()
     device = next(model.parameters()).device
     
-    # Encode the prompt
-    input_ids = tokenizer.encode(prompt)
+    # Encode the prompt with BOS token
+    input_ids = [tokenizer.bos_token_id] + tokenizer.encode(prompt)
     input_tensor = torch.tensor([input_ids], device=device)
     
     generated_ids = input_ids.copy()
     
+    print(f"🔍 Debug: Prompt tokens: {input_ids[:10]}...")  # Debug first 10 tokens
+    
     with torch.no_grad():
-        for _ in range(max_new_tokens):
+        for i in range(max_new_tokens):
             # Get model output
             outputs = model(input_tensor)
             logits = outputs.logits[0, -1, :]  # Last token
@@ -235,15 +415,27 @@ def generate_text(model, tokenizer, prompt, max_new_tokens=50, temperature=0.8):
             # Apply temperature
             logits = logits / temperature
             
+            # Use top-k sampling for better quality
+            top_k = 50
+            if top_k > 0:
+                indices_to_remove = logits < torch.topk(logits, top_k)[0][..., -1, None]
+                logits[indices_to_remove] = float('-inf')
+            
             # Sample next token
             probs = torch.softmax(logits, dim=-1)
             next_token = torch.multinomial(probs, 1).item()
+            
+            # Debug: show what token was selected
+            if i < 5:  # Show first 5 tokens
+                token_text = tokenizer.id_to_token.get(next_token, f"ID:{next_token}")
+                print(f"🔍 Generated token {i+1}: {next_token} -> '{token_text}'")
             
             # Add to sequence
             generated_ids.append(next_token)
             
             # Stop if EOS
             if next_token == tokenizer.eos_token_id:
+                print("🛑 Hit EOS token, stopping generation")
                 break
             
             # Update input tensor
@@ -256,8 +448,19 @@ def generate_text(model, tokenizer, prompt, max_new_tokens=50, temperature=0.8):
             if input_tensor.size(1) > 100:  # Keep last 100 tokens
                 input_tensor = input_tensor[:, -100:]
     
-    # Decode and return
-    return tokenizer.decode(generated_ids)
+    # Decode and return, but filter out special tokens for cleaner output
+    full_text = tokenizer.decode(generated_ids)
+    
+    # Try to extract just the generated part (after the prompt)
+    try:
+        prompt_text = tokenizer.decode([tokenizer.bos_token_id] + tokenizer.encode(prompt))
+        if full_text.startswith(prompt_text):
+            generated_part = full_text[len(prompt_text):]
+            return prompt + generated_part
+        else:
+            return full_text
+    except:
+        return full_text
 
 
 def main():
@@ -281,13 +484,27 @@ def main():
     config = L1Config(**config_dict)
     
     # Load tokenizer
-    tokenizer = SimpleTokenizer(os.path.join(args.model_path, 'tokenizer.json'))
+    tokenizer = load_tokenizer(args.model_path)
     
     # Load model
     model = L1Model(config)
-    state_dict = torch.load(os.path.join(args.model_path, 'pytorch_model.bin'), 
-                           map_location='cpu')
-    model.load_state_dict(state_dict)
+    
+    # Try to load from checkpoint first (for actively training models)
+    checkpoint_path = os.path.join(args.model_path, 'latest_checkpoint.pt')
+    if not os.path.exists(checkpoint_path):
+        checkpoint_path = os.path.join(args.model_path, 'checkpoint_epoch_1_step_16000.pt')
+    
+    if os.path.exists(checkpoint_path):
+        print(f"Loading from checkpoint: {checkpoint_path}")
+        checkpoint = torch.load(checkpoint_path, map_location='cpu')
+        model.load_state_dict(checkpoint['model_state_dict'])
+        print(f"✅ Loaded from step {checkpoint.get('step', 'unknown')}")
+    else:
+        # Fallback to final model
+        state_dict = torch.load(os.path.join(args.model_path, 'pytorch_model.bin'), 
+                               map_location='cpu')
+        model.load_state_dict(state_dict)
+        print("✅ Loaded from pytorch_model.bin")
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
