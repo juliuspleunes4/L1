@@ -164,10 +164,71 @@ def add_dataset_from_args(args):
     
     return args.dataset_id, dataset_config
 
+def setup_preset_datasets(preset_name: str, config_file: str = "datasets.yaml"):
+    """Setup multiple datasets from a preset configuration"""
+    import subprocess
+    import sys
+    
+    config = load_datasets_config(config_file)
+    
+    if 'presets' not in config or preset_name not in config['presets']:
+        available_presets = list(config.get('presets', {}).keys())
+        print(f"❌ Preset '{preset_name}' niet gevonden!")
+        print(f"📋 Beschikbare presets: {', '.join(available_presets)}")
+        return False
+    
+    preset = config['presets'][preset_name]
+    print(f"🎯 Setting up preset: {preset['name']}")
+    print(f"📄 {preset['description']}")
+    print(f"📊 Max samples: {preset['max_samples']:,}")
+    print(f"📚 Vocab size: {preset['vocab_size']:,}")
+    print()
+    
+    # Use the dedicated download script
+    try:
+        print(f"🚀 Starting dataset download and preparation...")
+        result = subprocess.run([
+            sys.executable, "download_preset_data.py", preset_name
+        ], capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            print(result.stdout)
+            return True
+        else:
+            print(f"❌ Error setting up preset:")
+            print(result.stderr)
+            return False
+            
+    except FileNotFoundError:
+        print(f"❌ download_preset_data.py not found. Using fallback method...")
+        
+        # Fallback: just show what would be done
+        datasets_to_setup = preset['recommended_datasets']
+        print(f"📦 Datasets in preset: {', '.join(datasets_to_setup)}")
+        print()
+        
+        for dataset_id in datasets_to_setup:
+            if dataset_id not in config['datasets']:
+                print(f"⚠️  Dataset '{dataset_id}' not found in datasets.yaml")
+                continue
+                
+            dataset_config = config['datasets'][dataset_id]
+            print(f"� {dataset_config['name']}")
+            print(f"   📄 {dataset_config['description']}")
+            if dataset_config.get('download_method') == 'kagglehub':
+                print(f"   � KaggleHub: {dataset_config.get('kagglehub_path')}")
+            print()
+        
+        print(f"⚠️  To actually download the data, please run:")
+        print(f"   python download_preset_data.py {preset_name}")
+        return True
+
 def main():
     parser = argparse.ArgumentParser(description="Voeg nieuwe datasets toe aan L1")
     parser.add_argument("--interactive", "-i", action="store_true", 
                        help="Interactieve modus")
+    parser.add_argument("--preset", 
+                       help="Use a preset configuration (beginner, intermediate, advanced, conversational, technical, knowledge)")
     parser.add_argument("--dataset-id", help="Dataset ID")
     parser.add_argument("--name", help="Dataset naam")
     parser.add_argument("--description", help="Dataset beschrijving")
@@ -189,6 +250,15 @@ def main():
                        help="Config bestand")
     
     args = parser.parse_args()
+    
+    # Handle preset mode
+    if args.preset:
+        success = setup_preset_datasets(args.preset, args.config)
+        if success:
+            print(f"\n🚀 Next steps:")
+            print(f"   1. Prepare the dataset: python prepare_large_dataset.py data/raw/combined_dataset.txt")
+            print(f"   2. Start training: python train_gpu_compatible.py")
+        return
     
     if args.interactive or not args.dataset_id:
         # Interactieve modus

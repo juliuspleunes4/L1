@@ -60,10 +60,10 @@ L1/
 
 3. **Install PyTorch with CUDA support**:
    ```bash
-   # For CUDA 12.8+ (RTX 50.. Series compatible)
+   # For CUDA 12.1+ (RTX 5060+ Optimised, also works on the 40+ series)
    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
    
-   # Or for CPU-only training
+   # Or for CPU-only training (slower)
    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
    ```
 
@@ -72,108 +72,52 @@ L1/
    pip install -r requirements.txt
    ```
 
-5. **Verify GPU setup** (if using GPU):
+5. **Verify installation** (optional):
    ```bash
+   # Test data preparation (should work immediately)
+   python add_dataset.py --help
+   
+   # Test GPU setup (requires PyTorch)
    python -c "import torch; print(f'CUDA Available: {torch.cuda.is_available()}')"
    python -c "import torch; print(f'GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"None\"}')"
    ```
 
-6. **Verify installation**:
+6. **Run validation test**:
+* Note: The test will most likely fail 3 out of the 5, because of CUDA problems. This can be safely ignored.
    ```bash
-   python demo.py
+   python validate_setup.py
    ```
 
 ## 🎯 Quick Start
 
-### 1. Demo the Project
+Ready to train your own language model? Here's the fastest way:
+
+### **🚀 4-Step Quick Start**
+
 ```bash
-python demo.py
-```
-This runs a comprehensive test of all components and shows you that everything is working.
+# Step 1: Get high-quality training data (500k samples)
+python add_dataset.py --preset advanced
 
-### 2. Prepare Your Data
+# Step 2: Prepare the large dataset
+python prepare_large_dataset.py data/raw/combined_dataset.txt
 
-#### Using Pre-configured Datasets (Recommended)
-```bash
-# Use Wikipedia Simple English (current default - recommended)
-python prepare_large_dataset.py
-
-# Or choose from 15+ pre-configured datasets
-python add_dataset.py --preset beginner    # 50k samples, quick training
-python add_dataset.py --preset intermediate # 150k samples, balanced
-python add_dataset.py --preset advanced     # 500k samples, comprehensive
-```
-
-#### Adding Your Own Kaggle Dataset
-L1 makes it incredibly easy to add any Kaggle dataset:
-
-**Method 1: Add to datasets.yaml (Permanent)**
-```yaml
-# Edit datasets.yaml and add your dataset:
-your_dataset:
-  name: "Your Dataset Name"
-  description: "Dataset description"
-  download_method: "kagglehub"
-  kagglehub_path: "username/dataset-name"  # From Kaggle URL
-  auto_detect_format: true
-  recommended_samples: 100000
-  recommended_vocab: 20000
-  quality: "high"
-  topics: ["your", "topics"]
-```
-
-**Method 2: Direct Download (Quick)**
-```python
-import kagglehub
-dataset_path = kagglehub.dataset_download("username/dataset-name")
-python prepare_large_dataset.py --custom_path dataset_path
-```
-
-**Method 3: Using Kaggle API**
-```bash
-# Install and setup Kaggle API
-pip install kaggle
-kaggle datasets download username/dataset-name -p data/raw/
-python add_dataset.py --custom data/raw/dataset-name
-```
-
-#### Custom Data
-```bash
-# Prepare your own text files
-python scripts/prepare_data.py \
-    --input data/raw/your_text.txt \
-    --output data/processed/
-```
-
-### 3. Train a Model
-
-#### GPU Training (Recommended)
-```bash
-# RTX 50.. Series optimized
+# Step 3: Start GPU training
 python train_gpu_compatible.py
 
-# Use custom config
-python train_gpu_compatible.py --config configs/train_config_gpu.yaml
+# Step 4: Generate text with your trained model
+python generate_simple.py --prompt "The future of AI is"
 ```
 
-#### CPU Training
-```bash
-python train_minimal.py
-```
+**That's it!** The preset automatically downloads Wikipedia + ArXiv papers, processes the data, and you're ready to train.
 
-### 4. Generate Text
-```bash
-python generate_simple.py \
-    --prompt "The future of artificial intelligence is" \
-    --max-tokens 50
-```
+---
 
-### 5. Resume Training
-Training automatically resumes from the last checkpoint:
-```bash
-# Same command automatically resumes
-python train_gpu_compatible.py
-```
+### **📚 Next Steps**
+
+1. **Demo the Project**: Run `python demo.py` to test all components
+2. **Customize Training**: Edit `configs/train_config_gpu.yaml` for your hardware
+3. **Add Custom Data**: See the Data Preparation section below for advanced options
+4. **Monitor Training**: Use `tail -f models/l1-gpu-compatible/training.log`
 
 ## 📊 Model Architecture
 
@@ -188,14 +132,13 @@ L1 implements a decoder-only transformer architecture with:
 
 ### Model Sizes
 
-| Model | Layers | Heads | Embedding | Parameters | GPU Memory | Use Case |
-|-------|---------|-------|-----------|------------|------------|----------|
-| Tiny  | 2      | 4     | 128       | ~540K      | 2GB        | Testing/Demo |
-| Small | 6      | 6     | 384       | ~25M       | 4GB        | Experiments |
-| **L1 Current** | **12** | **16** | **1024** | **~155M** | **8GB** | **Production** |
-| Large | 24     | 16    | 1024      | ~340M      | 16GB       | Research |
+| Model | Layers | Heads | Embedding | Parameters | GPU Memory | Use Case | Config File |
+|-------|---------|-------|-----------|------------|------------|----------|-------------|
+| Small | 6      | 8     | 512       | ~25M       | 4GB        | Experiments | `train_config.yaml` |
+| Medium | 12     | 12    | 768       | ~117M      | 6GB        | Balanced | `base_config.yaml` |
+| **L1 Current** | **12** | **16** | **1024** | **~155M** | **8GB** | **Production** | **`train_config_gpu.yaml`** |
 
-> **Note**: L1 Current model is optimized for RTX 5060 Ti (16GB VRAM) with batch size 8 and mixed precision training.
+> **Note**: L1 Current model is optimized for RTX 5060 Ti (16GB VRAM) with batch size 8 and mixed precision training. You can customize these configurations by editing the YAML files directly.
 
 ## 🔧 Configuration
 
@@ -237,15 +180,19 @@ training:
   learning_rate: 5e-4
 ```
 
-## � Adding Kaggle Datasets
+## 📊 Data Preparation & Management
 
-L1 includes a powerful dataset management system that makes adding Kaggle datasets incredibly easy. You have **15+ pre-configured datasets** ready to use, plus simple ways to add your own.
+L1 includes a powerful dataset management system that makes adding datasets incredibly easy. You have **15+ pre-configured datasets** ready to use, plus simple ways to add your own.
 
-### 🚀 Quick Start with Pre-configured Datasets
+### 🚀 Using Pre-configured Dataset Presets
 
 Choose from curated datasets in `datasets.yaml`:
 
 ```bash
+# Advanced: Comprehensive training (recommended)
+python add_dataset.py --preset advanced
+# → Wikipedia Simple + ArXiv Papers (500k samples)
+
 # Beginner: Quick training with high-quality data
 python add_dataset.py --preset beginner
 # → Wikipedia Simple + News (50k samples)
@@ -254,15 +201,16 @@ python add_dataset.py --preset beginner
 python add_dataset.py --preset intermediate  
 # → Wikipedia + Books + News (150k samples)
 
-# Advanced: Comprehensive training
-python add_dataset.py --preset advanced
-# → Wikipedia + Research Papers + Books (500k samples)
-
 # Specialized presets
 python add_dataset.py --preset conversational  # Reddit + Twitter + Wikipedia
 python add_dataset.py --preset technical       # GitHub + Stack Overflow + Papers
 python add_dataset.py --preset knowledge       # Full Wikipedia + Papers + Books
 ```
+
+**What happens when you run a preset:**
+1. 🔄 Downloads the specified datasets automatically
+2. 📝 Combines them into a single training file
+3. ✅ Processes and saves to `data/processed/` for training
 
 ### 📚 Available Datasets
 
@@ -277,7 +225,7 @@ python add_dataset.py --preset knowledge       # Full Wikipedia + Papers + Books
 | News Articles | 50k | High | Current events | Factual knowledge |
 | OpenWebText | 500k | High | General web | GPT-style training |
 
-### 🔧 Adding Your Own Kaggle Dataset
+### 🔧 Adding Custom Datasets
 
 #### Method 1: Add to Configuration (Recommended)
 
@@ -309,8 +257,14 @@ presets:
 
 3. **Use your dataset**:
 ```bash
-python add_dataset.py your_awesome_dataset
-# or
+# Use a specific dataset
+python add_dataset.py --dataset-id your_awesome_dataset \
+    --name "Your Dataset" \
+    --description "Description" \
+    --method kagglehub \
+    --path "username/dataset-name"
+
+# Or use in a preset (edit datasets.yaml first)
 python add_dataset.py --preset your_preset
 ```
 
@@ -324,8 +278,8 @@ dataset_path = kagglehub.dataset_download("huggingface/squad")
 dataset_path = kagglehub.dataset_download("Cornell-University/arxiv")
 dataset_path = kagglehub.dataset_download("your-username/your-dataset")
 
-# Use with L1
-python prepare_large_dataset.py --custom_path dataset_path
+# Then process with L1
+python prepare_large_dataset.py "path/to/downloaded/dataset.txt"
 ```
 
 #### Method 3: Kaggle API (Advanced)
@@ -340,7 +294,18 @@ kaggle datasets download username/dataset-name -p data/raw/
 unzip data/raw/dataset-name.zip -d data/raw/
 
 # Process with L1
-python add_dataset.py --custom data/raw/dataset-name
+python prepare_large_dataset.py data/raw/your-extracted-file.txt
+```
+
+#### Method 4: Custom Text Files
+```bash
+# Prepare your own text files
+python prepare_large_dataset.py data/raw/your_text.txt
+
+# Or use the scripts directory
+python scripts/prepare_data.py \
+    --input data/raw/your_text.txt \
+    --output data/processed/
 ```
 
 ### 🎯 Dataset Selection Tips
@@ -375,7 +340,7 @@ python dataset_manager.py --preview your_dataset --samples 5
 python dataset_manager.py --validate your_dataset
 ```
 
-## �📈 Training
+## � Training
 
 ### GPU Training (Recommended)
 Train with GPU acceleration and advanced optimizations:
@@ -475,12 +440,14 @@ python demo.py
 
 ## 📚 Documentation
 
-- **[Model Architecture](docs/architecture.md)**: Detailed architecture overview
-- **[Training Guide](docs/training.md)**: Comprehensive training instructions
-- **[API Reference](docs/api.md)**: API documentation (coming soon)
-- **[Configuration Guide](docs/configuration.md)**: Configuration options (coming soon)
+- **[Architecture](docs/architecture.md)**: Detailed L1 transformer architecture  
+- **[GPU Training Guide](docs/GPU_TRAINING_GUIDE.md)**: RTX 5060 Ti setup and optimization
+- **[Dataset Setup](docs/DATASET_SETUP_GUIDE.md)**: Comprehensive data preparation
+- **[Wikipedia Setup](docs/WIKIPEDIA_SETUP.md)**: Wikipedia Simple English dataset guide
+- **[Easy Datasets](docs/EASY_DATASETS.md)**: Quick dataset options
+- **[Training Guide](docs/training.md)**: Advanced training techniques
 
-## 🚀 Performance Tips
+## 🚀 Performance Optimization
 
 ### GPU Optimization (RTX 5060 Ti and similar)
 - **Mixed Precision**: Enabled by default (`mixed_precision: true`)
@@ -512,16 +479,7 @@ training:
   max_checkpoints_to_keep: 5
 ```
 
-## 📚 Documentation
-
-- **[Architecture](docs/architecture.md)**: Detailed L1 transformer architecture
-- **[GPU Training Guide](docs/GPU_TRAINING_GUIDE.md)**: RTX 5060 Ti setup and optimization
-- **[Dataset Setup](docs/DATASET_SETUP_GUIDE.md)**: Comprehensive data preparation
-- **[Wikipedia Setup](docs/WIKIPEDIA_SETUP.md)**: Wikipedia Simple English dataset guide
-- **[Easy Datasets](docs/EASY_DATASETS.md)**: Quick dataset options
-- **[Training Guide](docs/training.md)**: Advanced training techniques
-
-## 🧪 Testing
+## 🧪 Testing & Validation
 
 Run the comprehensive test suite:
 ```bash
@@ -536,6 +494,44 @@ python test_model.py
 Run the demo script:
 ```bash
 python demo.py
+```
+
+## 🔧 Troubleshooting
+
+### Validation Script
+Run this to check if everything is set up correctly:
+```bash
+python validate_setup.py
+```
+
+### Common Issues
+
+**1. `ModuleNotFoundError: No module named 'kagglehub'`**
+```bash
+pip install kagglehub pandas
+```
+
+**2. `--preset` argument not recognized**
+Make sure you're using the latest version with the fixed `add_dataset.py`
+
+**3. Dataset download fails**
+Some Kaggle datasets require authentication or have access restrictions. The preset will continue with available datasets.
+
+**4. PyTorch DLL load failed (Windows)**
+Reinstall PyTorch with the correct CUDA version:
+```bash
+pip uninstall torch torchvision torchaudio
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+```
+
+**5. Unicode encoding errors (Windows)**
+The scripts are designed to handle Windows encoding. If you see Unicode errors, try running in Windows Terminal or PowerShell.
+
+**6. GPU out of memory**
+Reduce batch size in `configs/train_config_gpu.yaml`:
+```yaml
+training:
+  batch_size: 4  # Reduce from 8 to 4
 ```
 
 ## 📊 Current Status

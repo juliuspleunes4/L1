@@ -290,7 +290,7 @@ def main():
     processor.save_dataset(texts, vocab, args.split_ratio)
     
     print(f"\nReady for training!")
-    print(f"   Use: python train_gpu.py")
+    print(f"   Use: python train_gpu_compatible.py")
 
 if __name__ == "__main__":
     main()
