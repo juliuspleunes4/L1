@@ -149,11 +149,17 @@ class BPETokenizer(Tokenizer):
         # Initialize vocabulary with character-level tokens
         vocab = list(self.special_tokens.keys())
         
+        # Add essential tokens that are commonly missing
+        essential_tokens = [' ', '.', ',', '!', '?', ':', ';', '"', "'", '(', ')', '-', '\n', '\t']
+        for token in essential_tokens:
+            if token not in vocab:
+                vocab.append(token)
+        
         # Add all unique characters
         chars = set()
         for word in word_freqs:
             chars.update(word)
-        vocab.extend(sorted(chars))
+        vocab.extend(sorted(chars - set(vocab)))  # Avoid duplicates
         
         # Initialize word representations
         word_splits = {
@@ -308,18 +314,41 @@ class BPETokenizer(Tokenizer):
         tokens = []
         for token_id in token_ids:
             if token_id in self.id_to_token:
-                tokens.append(self.id_to_token[token_id])
+                token = self.id_to_token[token_id]
+                # Skip special tokens in output
+                if token not in ['<pad>', '<bos>', '<eos>']:
+                    tokens.append(token)
             else:
                 tokens.append('<unk>')
         
+        # Join all BPE tokens
         text = ''.join(tokens)
         
-        # Decode bytes
+        # Decode from unicode back to bytes, then to text
         try:
-            text_bytes = bytearray([self.byte_decoder[c] for c in text])
-            return text_bytes.decode('utf-8', errors='replace')
-        except KeyError:
-            return text
+            text_bytes = bytearray()
+            for c in text:
+                if c in self.byte_decoder:
+                    text_bytes.append(self.byte_decoder[c])
+                else:
+                    # Fallback for unknown characters
+                    text_bytes.extend(c.encode('utf-8'))
+            
+            decoded_text = text_bytes.decode('utf-8', errors='replace')
+            
+            # Post-process: Clean up <unk> tokens that are typically separators
+            # This handles cases where spaces/punctuation become <unk> during generation
+            import re
+            decoded_text = re.sub(r'<unk>', ' ', decoded_text)
+            decoded_text = re.sub(r'\s+', ' ', decoded_text).strip()
+            
+            return decoded_text
+            
+        except (KeyError, UnicodeDecodeError):
+            # Fallback: return as-is if byte decoding fails
+            import re
+            clean_text = re.sub(r'<unk>', ' ', text)
+            return re.sub(r'\s+', ' ', clean_text).strip()
     
     def save(self, path: str):
         """Save tokenizer to file."""

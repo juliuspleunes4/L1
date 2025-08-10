@@ -166,18 +166,50 @@ class BPETokenizer:
         tokens = []
         for token_id in token_ids:
             if token_id in self.id_to_token:
-                tokens.append(self.id_to_token[token_id])
+                token = self.id_to_token[token_id]
+                # Skip special tokens in output (except unk which we'll handle)
+                if token not in ['<pad>', '<bos>', '<eos>']:
+                    tokens.append(token)
             else:
                 tokens.append('<unk>')
         
+        # Join all BPE tokens
         text = ''.join(tokens)
         
-        # Decode bytes
+        # Decode from unicode back to bytes, then to text
         try:
-            text_bytes = bytearray([self.byte_decoder[c] for c in text])
-            return text_bytes.decode('utf-8', errors='replace')
-        except KeyError:
-            return text
+            text_bytes = bytearray()
+            for c in text:
+                if c in self.byte_decoder:
+                    text_bytes.append(self.byte_decoder[c])
+                else:
+                    # Fallback for unknown characters
+                    text_bytes.extend(c.encode('utf-8'))
+            
+            decoded_text = text_bytes.decode('utf-8', errors='replace')
+            
+            # More aggressive <unk> cleanup since we fixed the vocab
+            import re
+            
+            # Replace most <unk> tokens with spaces (they're usually separators)
+            decoded_text = re.sub(r'<unk>', ' ', decoded_text)
+            
+            # Clean up multiple spaces
+            decoded_text = re.sub(r'\s+', ' ', decoded_text).strip()
+            
+            return decoded_text
+            
+        except (KeyError, UnicodeDecodeError):
+            # Fallback: return as-is if byte decoding fails, but apply smart <unk> handling
+            import re
+            
+            # Smart replacement: only replace <unk> when it's clearly a separator
+            clean_text = re.sub(r'(?<=\w)<unk>(?=\w)', ' ', text)
+            clean_text = re.sub(r'^<unk>(?=\w)', ' ', clean_text)
+            clean_text = re.sub(r'(?<=\w)<unk>$', ' ', clean_text)
+            clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+            
+            return clean_text
     
     @classmethod
     def load(cls, path: str) -> 'BPETokenizer':

@@ -488,7 +488,7 @@ training:
   max_checkpoints_to_keep: 5     # Auto-cleanup
 ```
 
-## 🧪 Testing & Validation
+## 🔧 Troubleshooting
 
 Run the comprehensive test suite:
 ```bash
@@ -504,6 +504,20 @@ Run the demo script:
 ```bash
 python demo.py
 ```
+
+### Tokenizer Issues
+
+If you're seeing excessive `<unk>` tokens or garbled output during text generation:
+
+```bash
+# Fix existing tokenizers (adds missing essential tokens)
+python fix_existing_tokenizer.py
+
+# Then test generation
+python generate_simple.py --prompt "The future of AI is"
+```
+
+This commonly happens with older trained models where the tokenizer was missing basic punctuation and space tokens.
 
 ## 🔧 Troubleshooting
 
@@ -536,7 +550,23 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 **5. Unicode encoding errors (Windows)**
 The scripts are designed to handle Windows encoding. If you see Unicode errors, try running in Windows Terminal or PowerShell.
 
-**6. GPU out of memory**
+**6. Text generation produces excessive `<unk>` tokens or garbled output**
+```bash
+# Fix tokenizer (adds missing essential tokens like spaces and punctuation)
+python fix_existing_tokenizer.py
+
+# Then test
+python generate_simple.py --prompt "Hello world"
+```
+
+**7. GPU out of memory**
+Reduce batch size in `configs/train_config_gpu.yaml`:
+```yaml
+training:
+  batch_size: 4  # Reduce from 8 to 4
+```
+
+**8. Training seems stuck or very slow**
 Reduce batch size in `configs/train_config_gpu.yaml`:
 ```yaml
 training:
