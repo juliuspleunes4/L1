@@ -61,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced setup guides with BPE training instructions
 - Improved architecture documentation
 
-## [1.0.0] - 2025-06-XX 🌟 Initial Release
+## [1.0.0] - 2025-07-XX 🌟 Initial Release
 
 ### 🎯 Core Features
 - **🏗️ Transformer Architecture**: Complete from-scratch implementation
