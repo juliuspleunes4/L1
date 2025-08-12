@@ -6,7 +6,7 @@
 @brief      : GPU-compatible training script for L1 model.
 @details    : This script is designed to train the L1 model on GPUs, specifically optimized
               for RTX 5060 Ti (sm_120) compatibility issues. Works on the 40 and 50 series.
-@version    : 1.0
+@version    : 2.3
 
 @license    : MIT License
 Copyright (c) 2025 Julius Pleunes
@@ -66,7 +66,14 @@ def load_config(config_path: str) -> dict:
         return yaml.safe_load(f)
 
 def setup_logging(output_dir: str):
-    """Setup logging configuration with detailed formatting"""
+    """Setup logging configuration with detailed formatting.
+
+    Args:
+        output_dir: Directory where training.log will be created
+        
+    Returns:
+        Logger instance configured for l1_training
+    """
     os.makedirs(output_dir, exist_ok=True)
     
     # Get a specific logger for this module
@@ -113,7 +120,17 @@ def get_gpu_info():
     return None
 
 def log_training_metrics(step: int, epoch: int, loss: float, learning_rate: float, best_loss: float, is_best: bool = False, additional_info: str = ""):
-    """Log detailed training metrics to the training log"""
+    """Log detailed training metrics to the training log.
+
+    Args:
+        step: Current training step
+        epoch: Current epoch number
+        loss: Current loss value
+        learning_rate: Current learning rate
+        best_loss: Best loss achieved so far
+        is_best: Whether this is a new best checkpoint
+        additional_info: Extra information to append to log entry
+    """
     # Get the specific logger for training
     logger = logging.getLogger('l1_training')
     
@@ -247,9 +264,31 @@ def train_epoch(
     save_checkpoint_fn=None,
     output_dir: str = None,
     model_config=None,  # Add model_config parameter
-    resumed_global_step: int = 0  # Add resumed step parameter
+    resumed_global_step: int = 0,  # Add resumed step parameter
+    best_checkpoint_loss: float = float('inf')  # Add best checkpoint loss parameter
 ) -> Dict[str, float]:
-    """Train for one epoch - compatible version with frequent checkpointing"""
+    """Train for one epoch - compatible version with frequent checkpointing.
+    
+    Args:
+        model: The neural network model to train
+        dataloader: DataLoader containing training data
+        optimizer: Optimizer for training
+        criterion: Loss function
+        device: Device to run training on (CPU/GPU)
+        epoch: Current epoch number
+        config: Training configuration dictionary
+        scaler: GradScaler for mixed precision training
+        use_amp: Whether to use automatic mixed precision
+        scheduler: Learning rate scheduler
+        save_checkpoint_fn: Function to save checkpoints
+        output_dir: Directory to save checkpoints
+        model_config: Model configuration object
+        resumed_global_step: Step number when resuming training
+        best_checkpoint_loss: Best checkpoint loss achieved so far
+        
+    Returns:
+        Dictionary containing loss, learning_rate, and best_checkpoint_loss
+    """
     model.train()
     num_batches = len(dataloader)
     # If resuming, initialize total_loss to reflect previous progress
@@ -344,23 +383,19 @@ def train_epoch(
                     current_step = (epoch - 1) * num_batches + global_step
                 current_loss = total_loss / (global_step)
                 
-                # Check if this is the best loss so far (using function attribute for training state)
-                # Note: This approach maintains state across checkpoint saves during training
-                if not hasattr(train_epoch, 'best_checkpoint_loss'):
-                    train_epoch.best_checkpoint_loss = float('inf')
-                
-                is_best_checkpoint = current_loss < train_epoch.best_checkpoint_loss
+                # Check if this is the best loss so far (using explicit parameter for training state)
+                is_best_checkpoint = current_loss < best_checkpoint_loss
                 if is_best_checkpoint:
-                    train_epoch.best_checkpoint_loss = current_loss
+                    best_checkpoint_loss = current_loss
                     print(f"\n🏆 NEW BEST LOSS! Saving best checkpoint at step {current_step} (loss: {current_loss:.4f})...")
                     # Log new best checkpoint with detailed metrics
                     current_lr = optimizer.param_groups[0]['lr']
-                    log_training_metrics(current_step, epoch, current_loss, current_lr, train_epoch.best_checkpoint_loss, is_best=True)
+                    log_training_metrics(current_step, epoch, current_loss, current_lr, best_checkpoint_loss, is_best=True)
                 else:
-                    print(f"\n💾 Saving progress checkpoint at step {current_step} (loss: {current_loss:.4f}, best: {train_epoch.best_checkpoint_loss:.4f})...")
+                    print(f"\n💾 Saving progress checkpoint at step {current_step} (loss: {current_loss:.4f}, best: {best_checkpoint_loss:.4f})...")
                     # Log regular checkpoint with detailed metrics
                     current_lr = optimizer.param_groups[0]['lr']
-                    log_training_metrics(current_step, epoch, current_loss, current_lr, train_epoch.best_checkpoint_loss, is_best=False)
+                    log_training_metrics(current_step, epoch, current_loss, current_lr, best_checkpoint_loss, is_best=False)
                 
                 save_checkpoint_fn(
                     model=model,
@@ -400,7 +435,8 @@ def train_epoch(
     train_epoch.previous_epoch_loss = total_loss / (processed_batches if processed_batches > 0 else 1)
     return {
         'loss': total_loss / num_batches,
-        'learning_rate': optimizer.param_groups[0]['lr']
+        'learning_rate': optimizer.param_groups[0]['lr'],
+        'best_checkpoint_loss': best_checkpoint_loss
     }
 
 def save_checkpoint(
@@ -725,8 +761,8 @@ def main():
         logger.info(f"Epochs planned: {num_epochs}")
         logger.info(f"Initial best loss: {best_loss}")
     
-    # Initialize best checkpoint loss tracking for the train_epoch function
-    train_epoch.best_checkpoint_loss = best_loss
+    # Initialize best checkpoint loss tracking (using explicit variable instead of function attributes)
+    best_checkpoint_loss = best_loss
     
     # Training loop with memory management
     print("🏁 Starting training...")
@@ -759,8 +795,12 @@ def main():
             save_checkpoint_fn=save_checkpoint,
             output_dir=output_dir,
             model_config=model_config,
-            resumed_global_step=global_step if epoch == start_epoch else 0  # Pass resumed step only for first resumed epoch
+            resumed_global_step=global_step if epoch == start_epoch else 0,  # Pass resumed step only for first resumed epoch
+            best_checkpoint_loss=best_checkpoint_loss  # Pass the best checkpoint loss state
         )
+        
+        # Update best checkpoint loss from epoch results
+        best_checkpoint_loss = epoch_metrics['best_checkpoint_loss']
         
         # Update global step counter
         global_step = current_epoch_display * len(dataloader)
@@ -772,7 +812,7 @@ def main():
         
         # Log epoch completion
         log_training_metrics(global_step, current_epoch_display, epoch_metrics['loss'], epoch_metrics['learning_rate'], 
-                           getattr(train_epoch, 'best_checkpoint_loss', float('inf')), is_best=False, 
+                           best_checkpoint_loss, is_best=False, 
                            additional_info="EPOCH_COMPLETE")
         
         # Clear GPU cache after each epoch to prevent memory accumulation
@@ -794,19 +834,18 @@ def main():
         
         # Save best checkpoint if loss improved (check against both epoch and checkpoint tracking)
         current_epoch_loss = epoch_metrics['loss']
-        checkpoint_best = getattr(train_epoch, 'best_checkpoint_loss', float('inf'))
         
         # Use the better of epoch-level or checkpoint-level tracking
         is_epoch_best = current_epoch_loss < best_loss
-        is_better_than_checkpoints = current_epoch_loss < checkpoint_best
+        is_better_than_checkpoints = current_epoch_loss < best_checkpoint_loss
         
         if is_epoch_best or is_better_than_checkpoints:
             # Store previous best loss before updating
-            previous_best = min(best_loss, checkpoint_best)
+            previous_best = min(best_loss, best_checkpoint_loss)
             
             # Update both tracking systems
             best_loss = min(best_loss, current_epoch_loss)
-            train_epoch.best_checkpoint_loss = min(checkpoint_best, current_epoch_loss)
+            best_checkpoint_loss = min(best_checkpoint_loss, current_epoch_loss)
             
             # Log best epoch detection with correct previous best
             logger = logging.getLogger('l1_training')
@@ -833,8 +872,8 @@ def main():
     print(f"\n🎉 Training completed!")
     print(f"📁 Model saved to: {output_dir}")
     print(f"🏆 Best epoch loss: {best_loss:.4f}")
-    if hasattr(train_epoch, 'best_checkpoint_loss') and train_epoch.best_checkpoint_loss != float('inf'):
-        print(f"⭐ Best checkpoint loss: {train_epoch.best_checkpoint_loss:.4f}")
+    if best_checkpoint_loss != float('inf'):
+        print(f"⭐ Best checkpoint loss: {best_checkpoint_loss:.4f}")
         print(f"📋 Note: The best checkpoint (saved every 1000 steps) may be better than the best epoch!")
     else:
         print(f"📋 Checkpoint-level best tracking: Not available")
@@ -844,8 +883,8 @@ def main():
     logger.info("TRAINING COMPLETED SUCCESSFULLY")
     logger.info(f"Completion time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     logger.info(f"Final best epoch loss: {best_loss:.4f}")
-    if hasattr(train_epoch, 'best_checkpoint_loss') and train_epoch.best_checkpoint_loss != float('inf'):
-        logger.info(f"Final best checkpoint loss: {train_epoch.best_checkpoint_loss:.4f}")
+    if best_checkpoint_loss != float('inf'):
+        logger.info(f"Final best checkpoint loss: {best_checkpoint_loss:.4f}")
     logger.info(f"Model saved to: {output_dir}")
     logger.info("="*60)
 
