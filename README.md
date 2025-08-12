@@ -366,6 +366,7 @@ tail -f models/l1-gpu-compatible/training.log
 - ✅ **Lightning Fast**: 10+ steps/second 
 - ✅ **Gradient Checkpointing**: Memory-efficient training for large models
 - ✅ **Smart Checkpointing**: Save every 1000 steps (~2 minutes) with auto-cleanup
+- ✅ **Best Model Tracking**: Automatically keeps the best checkpoint based on average loss
 - ✅ **Automatic Resume**: Seamless training continuation from interruptions
 - ✅ **Optimized Architecture**: BPE tokenization + stable 12-layer configuration
 
@@ -376,7 +377,7 @@ python train_minimal.py
 ```
 
 ### Training Monitoring
-L1 provides comprehensive training monitoring:
+L1 provides comprehensive training monitoring with detailed logging:
 
 ```bash
 # Real-time training metrics
@@ -388,10 +389,33 @@ L1 provides comprehensive training monitoring:
    ├── Mixed precision: True
    └── Optimizer: AdamW
 
-# Progress tracking
-💾 Saving progress checkpoint at step 1100...
-🗑️ Cleaned up old checkpoint: checkpoint_epoch_1_step_600.pt
+# Progress tracking with best model detection
+🏆 NEW BEST LOSS! Saving best checkpoint at step 5000 (loss: 1.2341, best: 1.2341)
+💾 Saving progress checkpoint at step 6000 (loss: 1.2456, best: 1.2341)
 ```
+
+**📋 Comprehensive Training Log (`training.log`):**
+```
+2025-08-12 18:06:24 | INFO | TRAINING SESSION STARTED
+2025-08-12 18:06:24 | INFO | Model: 12 layers, 12 heads, Vocabulary: 32000
+2025-08-12 18:06:25 | INFO | BEST | Epoch: 1 | Step: 1000 | Loss: 2.543200 | Avg_Loss: 2.521000 | Best: 2.543200 | LR: 1.00e-04
+2025-08-12 18:06:26 | INFO | CHECKPOINT | Epoch: 1 | Step: 2000 | Loss: 2.456789 | Avg_Loss: 2.445000 | Best: 2.543200 | LR: 1.00e-04
+2025-08-12 18:06:27 | INFO | EPOCH 1 COMPLETED | Loss: 2.456789 | Avg_Loss: 2.445000 | LR: 1.00e-04 | EPOCH_COMPLETE
+```
+
+**Training Log Features:**
+- 📊 **Detailed Metrics**: Timestamp, epoch, step, loss, avg_loss, learning rate for every checkpoint
+- 🏆 **Best Tracking**: Clear marking of new best checkpoints with "BEST" indicator
+- 📈 **Dual Loss Tracking**: Both instantaneous loss and running average loss
+- 🔄 **Resume Compatible**: Logs continue seamlessly across training sessions
+- 📈 **Progress Analysis**: Easy to track loss trends and training progress over time
+- 💾 **Persistent**: All training history preserved in `models/[model-name]/training.log`
+
+**Best Model Tracking:**
+- 🏆 **Smart Best Detection**: Tracks the best model at every checkpoint (1000 steps)
+- 📊 **Automatic Updates**: `best_checkpoint.pt` is updated whenever loss improves
+- 🎯 **Generation Ready**: Best checkpoint is automatically saved in `pytorch_model.bin` format
+- 🔄 **Resume Compatible**: Best loss tracking continues across training sessions
 
 ### Resume Training
 Training automatically resumes from the last checkpoint:
@@ -402,6 +426,21 @@ python train_gpu_compatible.py
 # Output:
 📥 Loading checkpoint from models/l1-gpu-compatible/latest_checkpoint.pt
 ✅ Resumed from epoch 2, step 1847, loss: 2.1432
+```
+
+**📊 Monitor Training Progress:**
+```bash
+# Watch live training log
+tail -f models/l1-gpu-compatible/training.log
+
+# Check recent progress (last 20 lines)
+tail -20 models/l1-gpu-compatible/training.log
+
+# Search for best checkpoints
+grep "BEST" models/l1-gpu-compatible/training.log
+
+# Track loss progression
+grep "Step:" models/l1-gpu-compatible/training.log | tail -10
 ```
 
 ## 🎛️ Text Generation
@@ -420,6 +459,15 @@ python generate_simple.py \
     --max_tokens 100 \
     --temperature 0.8 \
     --model_path models/l1-gpu-compatible/best_checkpoint.pt
+```
+
+**Using the Best Checkpoint:**
+```bash
+# Use the automatically tracked best model
+python generate_simple.py --model_path models/l1-gpu-compatible --prompt "Your prompt here"
+
+# The script automatically uses pytorch_model.bin (best checkpoint format)
+# No need to specify best_checkpoint.pt directly
 ```
 
 ### Generation Parameters

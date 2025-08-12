@@ -4,12 +4,5 @@
   "n_layers": 12,
   "n_heads": 12,
   "n_embd": 768,
-  "n_inner": 3072,
-  "dropout": 0.1,
-  "layer_norm_epsilon": 1e-05,
-  "initializer_range": 0.02,
-  "use_cache": true,
-  "pad_token_id": 0,
-  "eos_token_id": 3,
-  "bos_token_id": 2
+  "n_inner": 3072
 }
