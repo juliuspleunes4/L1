@@ -388,7 +388,7 @@ def train_epoch(
                 else:
                     # Normal calculation for fresh training
                     current_step = (epoch - 1) * num_batches + global_step
-                current_loss = total_loss / (global_step)
+                current_loss = total_loss / max(global_step, 1)  # Division by zero is prevented this way :D
                 
                 # Check if this is the best loss so far (using explicit parameter for training state)
                 is_best_checkpoint = current_loss < best_checkpoint_loss
@@ -442,7 +442,7 @@ def train_epoch(
     final_avg_loss = total_loss / (processed_batches if processed_batches > 0 else 1)
     train_epoch.previous_epoch_loss = final_avg_loss
     return {
-        'loss': total_loss / num_batches,
+        'loss': total_loss / max(num_batches, 1),  # Division by zero prevented
         'avg_loss': final_avg_loss,
         'learning_rate': optimizer.param_groups[0]['lr'],
         'best_checkpoint_loss': best_checkpoint_loss
