@@ -308,7 +308,18 @@ def train_epoch(
                     # Normal calculation for fresh training
                     current_step = (epoch - 1) * num_batches + global_step
                 current_loss = total_loss / (global_step)
-                print(f"\n💾 Saving progress checkpoint at step {current_step}...")
+                
+                # Check if this is the best loss so far (track globally via train_epoch function)
+                if not hasattr(train_epoch, 'best_checkpoint_loss'):
+                    train_epoch.best_checkpoint_loss = float('inf')
+                
+                is_best_checkpoint = current_loss < train_epoch.best_checkpoint_loss
+                if is_best_checkpoint:
+                    train_epoch.best_checkpoint_loss = current_loss
+                    print(f"\n🏆 NEW BEST LOSS! Saving best checkpoint at step {current_step} (loss: {current_loss:.4f})...")
+                else:
+                    print(f"\n💾 Saving progress checkpoint at step {current_step} (loss: {current_loss:.4f}, best: {train_epoch.best_checkpoint_loss:.4f})...")
+                
                 save_checkpoint_fn(
                     model=model,
                     optimizer=optimizer,
@@ -317,7 +328,7 @@ def train_epoch(
                     step=current_step,
                     loss=current_loss,
                     save_dir=output_dir,
-                    is_best=False,
+                    is_best=is_best_checkpoint,
                     model_config=model_config
                 )
             
@@ -384,7 +395,7 @@ def save_checkpoint(
     if is_best:
         best_path = os.path.join(save_dir, 'best_checkpoint.pt')
         torch.save(checkpoint, best_path)
-        print(f"💾 Best checkpoint saved: {checkpoint_path}")
+        print(f"🏆 NEW BEST CHECKPOINT! Loss: {loss:.4f} (saved as best_checkpoint.pt)")
         
         # Also save in format compatible with generate_simple.py
         try:
@@ -418,7 +429,7 @@ def save_checkpoint(
             with open(config_json_path, 'w') as f:
                 json.dump(model_config_dict, f, indent=2)
             
-            print(f"📄 Generation-compatible format saved (pytorch_model.bin + config.json)")
+            print(f"📄 Best model saved in generation format (pytorch_model.bin + config.json)")
         except Exception as e:
             print(f"⚠️  Failed to save generation format: {e}")
     else:
@@ -619,6 +630,17 @@ def main():
             checkpoint_epoch, global_step, resume_loss = load_checkpoint(resume_path, model, optimizer, device)
             best_loss = resume_loss
             
+            # Try to load the best loss from existing best checkpoint if it exists
+            best_checkpoint_path = os.path.join(output_dir, 'best_checkpoint.pt')
+            if os.path.exists(best_checkpoint_path):
+                try:
+                    best_checkpoint = torch.load(best_checkpoint_path, map_location=device)
+                    if 'loss' in best_checkpoint:
+                        best_loss = min(best_loss, best_checkpoint['loss'])
+                        print(f"📊 Found existing best checkpoint with loss: {best_checkpoint['loss']:.4f}")
+                except Exception as e:
+                    print(f"⚠️  Could not load best checkpoint: {e}")
+            
             # The checkpoint saves epoch as 1-based (human-readable), but our loop is 0-based
             # So if we're resuming from "epoch 1" (first epoch), we continue from epoch 0 in the loop
             start_epoch = checkpoint_epoch - 1
@@ -633,6 +655,9 @@ def main():
             best_loss = float('inf')
     else:
         print("🚀 No existing checkpoint found. Starting fresh training...")
+    
+    # Initialize best checkpoint loss tracking for the train_epoch function
+    train_epoch.best_checkpoint_loss = best_loss if best_loss != float('inf') else float('inf')
     
     # Training loop with memory management
     print("🏁 Starting training...")
@@ -693,16 +718,26 @@ def main():
             model_config=model_config
         )
         
-        # Save best checkpoint if loss improved
-        if epoch_metrics['loss'] < best_loss:
-            best_loss = epoch_metrics['loss']
+        # Save best checkpoint if loss improved (check against both epoch and checkpoint tracking)
+        current_epoch_loss = epoch_metrics['loss']
+        checkpoint_best = getattr(train_epoch, 'best_checkpoint_loss', float('inf'))
+        
+        # Use the better of epoch-level or checkpoint-level tracking
+        is_epoch_best = current_epoch_loss < best_loss
+        is_better_than_checkpoints = current_epoch_loss < checkpoint_best
+        
+        if is_epoch_best or is_better_than_checkpoints:
+            # Update both tracking systems
+            best_loss = min(best_loss, current_epoch_loss)
+            train_epoch.best_checkpoint_loss = min(checkpoint_best, current_epoch_loss)
+            
             save_checkpoint(
                 model=model,
                 optimizer=optimizer,
                 config=config,
                 epoch=current_epoch_display,  # Use the 1-based epoch number
                 step=global_step,
-                loss=best_loss,
+                loss=current_epoch_loss,
                 save_dir=output_dir,
                 is_best=True,
                 model_config=model_config
@@ -716,7 +751,12 @@ def main():
     
     print(f"\n🎉 Training completed!")
     print(f"📁 Model saved to: {output_dir}")
-    print(f"🏆 Best loss: {best_loss:.4f}")
+    print(f"🏆 Best epoch loss: {best_loss:.4f}")
+    if hasattr(train_epoch, 'best_checkpoint_loss') and train_epoch.best_checkpoint_loss != float('inf'):
+        print(f"⭐ Best checkpoint loss: {train_epoch.best_checkpoint_loss:.4f}")
+        print(f"📋 Note: The best checkpoint (saved every 1000 steps) may be better than the best epoch!")
+    else:
+        print(f"📋 Checkpoint-level best tracking: Not available")
 
 if __name__ == "__main__":
     main()

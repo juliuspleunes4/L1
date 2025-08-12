@@ -366,6 +366,7 @@ tail -f models/l1-gpu-compatible/training.log
 - ✅ **Lightning Fast**: 10+ steps/second 
 - ✅ **Gradient Checkpointing**: Memory-efficient training for large models
 - ✅ **Smart Checkpointing**: Save every 1000 steps (~2 minutes) with auto-cleanup
+- ✅ **Best Model Tracking**: Automatically keeps the best checkpoint based on average loss
 - ✅ **Automatic Resume**: Seamless training continuation from interruptions
 - ✅ **Optimized Architecture**: BPE tokenization + stable 12-layer configuration
 
@@ -388,10 +389,16 @@ L1 provides comprehensive training monitoring:
    ├── Mixed precision: True
    └── Optimizer: AdamW
 
-# Progress tracking
-💾 Saving progress checkpoint at step 1100...
-🗑️ Cleaned up old checkpoint: checkpoint_epoch_1_step_600.pt
+# Progress tracking with best model detection
+🏆 NEW BEST LOSS! Saving best checkpoint at step 5000 (loss: 1.2341, best: 1.2341)
+💾 Saving progress checkpoint at step 6000 (loss: 1.2456, best: 1.2341)
 ```
+
+**Best Model Tracking:**
+- 🏆 **Smart Best Detection**: Tracks the best model at every checkpoint (1000 steps)
+- 📊 **Automatic Updates**: `best_checkpoint.pt` is updated whenever loss improves
+- 🎯 **Generation Ready**: Best checkpoint is automatically saved in `pytorch_model.bin` format
+- 🔄 **Resume Compatible**: Best loss tracking continues across training sessions
 
 ### Resume Training
 Training automatically resumes from the last checkpoint:
@@ -420,6 +427,15 @@ python generate_simple.py \
     --max_tokens 100 \
     --temperature 0.8 \
     --model_path models/l1-gpu-compatible/best_checkpoint.pt
+```
+
+**Using the Best Checkpoint:**
+```bash
+# Use the automatically tracked best model
+python generate_simple.py --model_path models/l1-gpu-compatible --prompt "Your prompt here"
+
+# The script automatically uses pytorch_model.bin (best checkpoint format)
+# No need to specify best_checkpoint.pt directly
 ```
 
 ### Generation Parameters
