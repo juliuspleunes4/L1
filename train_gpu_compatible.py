@@ -291,13 +291,24 @@ def train_epoch(
         output_dir: Directory to save checkpoints
         model_config: Model configuration object
         resumed_global_step: Step number when resuming training
-        best_checkpoint_loss: Best checkpoint loss achieved so far
+        best_checkpoint_loss: Best checkpoint loss achieved so far (session-specific, 
+                            may not reflect global best across all training sessions)
         
     Returns:
         Dictionary containing loss, learning_rate, and best_checkpoint_loss
+        
+    Note:
+        The best_checkpoint_loss tracking is session-specific and may not reflect
+        the true global best if training is resumed from a checkpoint that had
+        a different best loss than the current session's starting point.
     """
     model.train()
     num_batches = len(dataloader)
+    
+    # Validate dataloader is not empty
+    if num_batches == 0:
+        raise ValueError("Dataloader is empty! Cannot train with no data batches.")
+    
     # If resuming, initialize total_loss to reflect previous progress
     if resumed_global_step > 0 and hasattr(train_epoch, "previous_epoch_loss"):
         total_loss = train_epoch.previous_epoch_loss * resumed_global_step
@@ -388,7 +399,7 @@ def train_epoch(
                 else:
                     # Normal calculation for fresh training
                     current_step = (epoch - 1) * num_batches + global_step
-                current_loss = total_loss / max(global_step, 1)  # Division by zero is prevented this way :D
+                current_loss = total_loss / max(global_step, 1)  # Division by zero is prevented this way 
                 
                 # Check if this is the best loss so far (using explicit parameter for training state)
                 is_best_checkpoint = current_loss < best_checkpoint_loss
@@ -442,7 +453,7 @@ def train_epoch(
     final_avg_loss = total_loss / (processed_batches if processed_batches > 0 else 1)
     train_epoch.previous_epoch_loss = final_avg_loss
     return {
-        'loss': total_loss / max(num_batches, 1),  # Division by zero prevented
+        'loss': total_loss / num_batches,  # Safe division since we validated num_batches > 0
         'avg_loss': final_avg_loss,
         'learning_rate': optimizer.param_groups[0]['lr'],
         'best_checkpoint_loss': best_checkpoint_loss
@@ -841,20 +852,13 @@ def main():
             model_config=model_config
         )
         
-        # Save best checkpoint if loss improved (check against both epoch and checkpoint tracking)
+        # Save best checkpoint if loss improved (simplified tracking)
         current_epoch_loss = epoch_metrics['loss']
         
-        # Use the better of epoch-level or checkpoint-level tracking
-        is_epoch_best = current_epoch_loss < best_loss
-        is_better_than_checkpoints = current_epoch_loss < best_checkpoint_loss
-        
-        if is_epoch_best or is_better_than_checkpoints:
-            # Store previous best loss before updating
-            previous_best = min(best_loss, best_checkpoint_loss)
-            
-            # Update both tracking systems
-            best_loss = min(best_loss, current_epoch_loss)
-            best_checkpoint_loss = min(best_checkpoint_loss, current_epoch_loss)
+        # Only track and update epoch-level best loss at epoch boundary
+        if current_epoch_loss < best_loss:
+            previous_best = best_loss
+            best_loss = current_epoch_loss
             
             # Log best epoch detection with correct previous best
             logger = logging.getLogger('l1_training')
