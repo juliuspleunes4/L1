@@ -398,14 +398,15 @@ L1 provides comprehensive training monitoring with detailed logging:
 ```
 2025-08-12 18:06:24 | INFO | TRAINING SESSION STARTED
 2025-08-12 18:06:24 | INFO | Model: 12 layers, 12 heads, Vocabulary: 32000
-2025-08-12 18:06:25 | INFO | BEST | Epoch: 1 | Step: 1000 | Loss: 2.543200 | Best: 2.543200 | LR: 1.00e-04
-2025-08-12 18:06:26 | INFO | CHECKPOINT | Epoch: 1 | Step: 2000 | Loss: 2.456789 | Best: 2.543200 | LR: 1.00e-04
-2025-08-12 18:06:27 | INFO | EPOCH 1 COMPLETED - Loss: 2.456789, LR: 1.00e-04, Steps: 2000
+2025-08-12 18:06:25 | INFO | BEST | Epoch: 1 | Step: 1000 | Loss: 2.543200 | Avg_Loss: 2.521000 | Best: 2.543200 | LR: 1.00e-04
+2025-08-12 18:06:26 | INFO | CHECKPOINT | Epoch: 1 | Step: 2000 | Loss: 2.456789 | Avg_Loss: 2.445000 | Best: 2.543200 | LR: 1.00e-04
+2025-08-12 18:06:27 | INFO | EPOCH 1 COMPLETED | Loss: 2.456789 | Avg_Loss: 2.445000 | LR: 1.00e-04 | EPOCH_COMPLETE
 ```
 
 **Training Log Features:**
-- 📊 **Detailed Metrics**: Timestamp, epoch, step, loss, learning rate for every checkpoint
+- 📊 **Detailed Metrics**: Timestamp, epoch, step, loss, avg_loss, learning rate for every checkpoint
 - 🏆 **Best Tracking**: Clear marking of new best checkpoints with "BEST" indicator
+- 📈 **Dual Loss Tracking**: Both instantaneous loss and running average loss
 - 🔄 **Resume Compatible**: Logs continue seamlessly across training sessions
 - 📈 **Progress Analysis**: Easy to track loss trends and training progress over time
 - 💾 **Persistent**: All training history preserved in `models/[model-name]/training.log`

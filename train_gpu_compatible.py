@@ -119,7 +119,7 @@ def get_gpu_info():
         }
     return None
 
-def log_training_metrics(step: int, epoch: int, loss: float, learning_rate: float, best_loss: float, is_best: bool = False, additional_info: str = ""):
+def log_training_metrics(step: int, epoch: int, loss: float, learning_rate: float, best_loss: float, is_best: bool = False, additional_info: str = "", avg_loss: float = None):
     """Log detailed training metrics to the training log.
 
     Args:
@@ -130,13 +130,20 @@ def log_training_metrics(step: int, epoch: int, loss: float, learning_rate: floa
         best_loss: Best loss achieved so far
         is_best: Whether this is a new best checkpoint
         additional_info: Extra information to append to log entry
+        avg_loss: Average loss over processed batches (if available)
     """
     # Get the specific logger for training
     logger = logging.getLogger('l1_training')
     
     # Create a comprehensive log entry (timestamp will be added by the logging formatter)
     log_type = "BEST" if is_best else "CHECKPOINT"
-    log_entry = f"{log_type} | Epoch: {epoch} | Step: {step} | Loss: {loss:.6f} | Best: {best_loss:.6f} | LR: {learning_rate:.2e}"
+    log_entry = f"{log_type} | Epoch: {epoch} | Step: {step} | Loss: {loss:.6f}"
+    
+    # Add avg_loss if provided
+    if avg_loss is not None:
+        log_entry += f" | Avg_Loss: {avg_loss:.6f}"
+    
+    log_entry += f" | Best: {best_loss:.6f} | LR: {learning_rate:.2e}"
     
     if additional_info:
         log_entry += f" | {additional_info}"
@@ -388,14 +395,14 @@ def train_epoch(
                 if is_best_checkpoint:
                     best_checkpoint_loss = current_loss
                     print(f"\n🏆 NEW BEST LOSS! Saving best checkpoint at step {current_step} (loss: {current_loss:.4f})...")
-                    # Log new best checkpoint with detailed metrics
+                    # Log new best checkpoint with detailed metrics including avg_loss
                     current_lr = optimizer.param_groups[0]['lr']
-                    log_training_metrics(current_step, epoch, current_loss, current_lr, best_checkpoint_loss, is_best=True)
+                    log_training_metrics(current_step, epoch, current_loss, current_lr, best_checkpoint_loss, is_best=True, avg_loss=avg_loss)
                 else:
                     print(f"\n💾 Saving progress checkpoint at step {current_step} (loss: {current_loss:.4f}, best: {best_checkpoint_loss:.4f})...")
-                    # Log regular checkpoint with detailed metrics
+                    # Log regular checkpoint with detailed metrics including avg_loss
                     current_lr = optimizer.param_groups[0]['lr']
-                    log_training_metrics(current_step, epoch, current_loss, current_lr, best_checkpoint_loss, is_best=False)
+                    log_training_metrics(current_step, epoch, current_loss, current_lr, best_checkpoint_loss, is_best=False, avg_loss=avg_loss)
                 
                 save_checkpoint_fn(
                     model=model,
@@ -432,9 +439,11 @@ def train_epoch(
                 raise e
     
     # Store the running loss for future resumption
-    train_epoch.previous_epoch_loss = total_loss / (processed_batches if processed_batches > 0 else 1)
+    final_avg_loss = total_loss / (processed_batches if processed_batches > 0 else 1)
+    train_epoch.previous_epoch_loss = final_avg_loss
     return {
         'loss': total_loss / num_batches,
+        'avg_loss': final_avg_loss,
         'learning_rate': optimizer.param_groups[0]['lr'],
         'best_checkpoint_loss': best_checkpoint_loss
     }
@@ -813,7 +822,7 @@ def main():
         # Log epoch completion
         log_training_metrics(global_step, current_epoch_display, epoch_metrics['loss'], epoch_metrics['learning_rate'], 
                            best_checkpoint_loss, is_best=False, 
-                           additional_info="EPOCH_COMPLETE")
+                           additional_info="EPOCH_COMPLETE", avg_loss=epoch_metrics.get('avg_loss'))
         
         # Clear GPU cache after each epoch to prevent memory accumulation
         if device.type == 'cuda':
