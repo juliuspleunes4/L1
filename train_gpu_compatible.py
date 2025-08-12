@@ -43,6 +43,7 @@ from typing import List, Dict, Any
 import logging
 from tqdm import tqdm
 import time
+from datetime import datetime
 
 # Force PyTorch to suppress dynamo errors and fallback to eager execution
 import torch._dynamo
@@ -65,15 +66,29 @@ def load_config(config_path: str) -> dict:
         return yaml.safe_load(f)
 
 def setup_logging(output_dir: str):
-    """Setup logging configuration"""
+    """Setup logging configuration with detailed formatting"""
     os.makedirs(output_dir, exist_ok=True)
+    
+    # Create a custom formatter for the log file
+    log_formatter = logging.Formatter(
+        '%(asctime)s | %(levelname)s | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    
+    # Setup file handler with custom formatter
+    log_file_path = os.path.join(output_dir, 'training.log')
+    file_handler = logging.FileHandler(log_file_path, mode='a', encoding='utf-8')
+    file_handler.setFormatter(log_formatter)
+    
+    # Setup console handler with simpler format
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+    
+    # Configure root logger
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(os.path.join(output_dir, 'training.log')),
-            logging.StreamHandler()
-        ]
+        handlers=[file_handler, console_handler],
+        force=True  # This ensures we override any existing logging config
     )
 
 def get_gpu_info():
@@ -90,6 +105,19 @@ def get_gpu_info():
             'memory_gb': gpu_memory
         }
     return None
+
+def log_training_metrics(step: int, epoch: int, loss: float, learning_rate: float, best_loss: float, is_best: bool = False, additional_info: str = ""):
+    """Log detailed training metrics to the training log"""
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Create a comprehensive log entry
+    log_type = "BEST" if is_best else "CHECKPOINT"
+    log_entry = f"{log_type} | {timestamp} | Epoch: {epoch} | Step: {step} | Loss: {loss:.6f} | Best: {best_loss:.6f} | LR: {learning_rate:.2e}"
+    
+    if additional_info:
+        log_entry += f" | {additional_info}"
+    
+    logging.info(log_entry)
 
 def apply_model_optimizations(model: nn.Module, config: dict, device: torch.device) -> List[str]:
     """Apply various optimizations to the model - compatible version"""
@@ -317,8 +345,14 @@ def train_epoch(
                 if is_best_checkpoint:
                     train_epoch.best_checkpoint_loss = current_loss
                     print(f"\n🏆 NEW BEST LOSS! Saving best checkpoint at step {current_step} (loss: {current_loss:.4f})...")
+                    # Log new best checkpoint with detailed metrics
+                    current_lr = optimizer.param_groups[0]['lr']
+                    log_training_metrics(current_step, epoch, current_loss, current_lr, train_epoch.best_checkpoint_loss, is_best=True)
                 else:
                     print(f"\n💾 Saving progress checkpoint at step {current_step} (loss: {current_loss:.4f}, best: {train_epoch.best_checkpoint_loss:.4f})...")
+                    # Log regular checkpoint with detailed metrics
+                    current_lr = optimizer.param_groups[0]['lr']
+                    log_training_metrics(current_step, epoch, current_loss, current_lr, train_epoch.best_checkpoint_loss, is_best=False)
                 
                 save_checkpoint_fn(
                     model=model,
@@ -396,6 +430,9 @@ def save_checkpoint(
         best_path = os.path.join(save_dir, 'best_checkpoint.pt')
         torch.save(checkpoint, best_path)
         print(f"🏆 NEW BEST CHECKPOINT! Loss: {loss:.4f} (saved as best_checkpoint.pt)")
+        
+        # Log best checkpoint save
+        logging.info(f"BEST CHECKPOINT SAVED - File: {checkpoint_path}, Loss: {loss:.4f}, Epoch: {epoch}, Step: {step}")
         
         # Also save in format compatible with generate_simple.py
         try:
@@ -619,6 +656,16 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     setup_logging(output_dir)
     
+    # Log training start
+    logging.info("="*60)
+    logging.info("TRAINING SESSION STARTED")
+    logging.info(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logging.info(f"Model: {config.get('model', {}).get('n_layers', 'Unknown')} layers, {config.get('model', {}).get('n_heads', 'Unknown')} heads")
+    logging.info(f"Vocabulary size: {vocab_size}")
+    logging.info(f"Training configuration: {config.get('training', {})}")
+    logging.info(f"Output directory: {output_dir}")
+    logging.info("="*60)
+    
     # Check for existing checkpoint to resume from
     resume_path = os.path.join(output_dir, 'latest_checkpoint.pt')
     start_epoch = 0
@@ -647,6 +694,11 @@ def main():
             
             print(f"🔄 Resuming training from epoch {checkpoint_epoch}, step {global_step}")
             print(f"📍 Continuing epoch {checkpoint_epoch} from step {global_step}")
+            
+            # Log resume information
+            logging.info(f"RESUMING TRAINING from epoch {checkpoint_epoch}, step {global_step}")
+            logging.info(f"Resumed loss: {resume_loss:.4f}")
+            logging.info(f"Best loss so far: {best_loss:.4f}")
         except Exception as e:
             print(f"⚠️  Failed to load checkpoint: {e}")
             print("🚀 Starting fresh training...")
@@ -655,6 +707,11 @@ def main():
             best_loss = float('inf')
     else:
         print("🚀 No existing checkpoint found. Starting fresh training...")
+        
+        # Log fresh start
+        logging.info("STARTING FRESH TRAINING - No existing checkpoint found")
+        logging.info(f"Epochs planned: {num_epochs}")
+        logging.info(f"Initial best loss: {best_loss}")
     
     # Initialize best checkpoint loss tracking for the train_epoch function
     train_epoch.best_checkpoint_loss = best_loss if best_loss != float('inf') else float('inf')
@@ -701,6 +758,11 @@ def main():
         print(f"   ├── Average Loss: {epoch_metrics['loss']:.4f}")
         print(f"   └── Learning Rate: {epoch_metrics['learning_rate']:.2e}")
         
+        # Log epoch completion
+        log_training_metrics(global_step, current_epoch_display, epoch_metrics['loss'], epoch_metrics['learning_rate'], 
+                           getattr(train_epoch, 'best_checkpoint_loss', float('inf')), is_best=False, 
+                           additional_info="EPOCH_COMPLETE")
+        
         # Clear GPU cache after each epoch to prevent memory accumulation
         if device.type == 'cuda':
             torch.cuda.empty_cache()
@@ -731,6 +793,9 @@ def main():
             best_loss = min(best_loss, current_epoch_loss)
             train_epoch.best_checkpoint_loss = min(checkpoint_best, current_epoch_loss)
             
+            # Log best epoch detection
+            logging.info(f"NEW BEST EPOCH! Epoch: {current_epoch_display}, Loss: {current_epoch_loss:.4f}, Previous best: {best_loss:.4f}")
+            
             save_checkpoint(
                 model=model,
                 optimizer=optimizer,
@@ -757,6 +822,16 @@ def main():
         print(f"📋 Note: The best checkpoint (saved every 1000 steps) may be better than the best epoch!")
     else:
         print(f"📋 Checkpoint-level best tracking: Not available")
+    
+    # Log training completion
+    logging.info("="*60)
+    logging.info("TRAINING COMPLETED SUCCESSFULLY")
+    logging.info(f"Completion time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logging.info(f"Final best epoch loss: {best_loss:.4f}")
+    if hasattr(train_epoch, 'best_checkpoint_loss') and train_epoch.best_checkpoint_loss != float('inf'):
+        logging.info(f"Final best checkpoint loss: {train_epoch.best_checkpoint_loss:.4f}")
+    logging.info(f"Model saved to: {output_dir}")
+    logging.info("="*60)
 
 if __name__ == "__main__":
     main()

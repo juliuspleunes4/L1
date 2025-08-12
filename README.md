@@ -377,7 +377,7 @@ python train_minimal.py
 ```
 
 ### Training Monitoring
-L1 provides comprehensive training monitoring:
+L1 provides comprehensive training monitoring with detailed logging:
 
 ```bash
 # Real-time training metrics
@@ -394,6 +394,22 @@ L1 provides comprehensive training monitoring:
 💾 Saving progress checkpoint at step 6000 (loss: 1.2456, best: 1.2341)
 ```
 
+**📋 Comprehensive Training Log (`training.log`):**
+```
+2025-08-12 18:06:24 | INFO | TRAINING SESSION STARTED
+2025-08-12 18:06:24 | INFO | Model: 12 layers, 12 heads, Vocabulary: 32000
+2025-08-12 18:06:25 | INFO | BEST | Epoch: 1 | Step: 1000 | Loss: 2.543200 | Best: 2.543200 | LR: 1.00e-04
+2025-08-12 18:06:26 | INFO | CHECKPOINT | Epoch: 1 | Step: 2000 | Loss: 2.456789 | Best: 2.543200 | LR: 1.00e-04
+2025-08-12 18:06:27 | INFO | EPOCH 1 COMPLETED - Loss: 2.456789, LR: 1.00e-04, Steps: 2000
+```
+
+**Training Log Features:**
+- 📊 **Detailed Metrics**: Timestamp, epoch, step, loss, learning rate for every checkpoint
+- 🏆 **Best Tracking**: Clear marking of new best checkpoints with "BEST" indicator
+- 🔄 **Resume Compatible**: Logs continue seamlessly across training sessions
+- 📈 **Progress Analysis**: Easy to track loss trends and training progress over time
+- 💾 **Persistent**: All training history preserved in `models/[model-name]/training.log`
+
 **Best Model Tracking:**
 - 🏆 **Smart Best Detection**: Tracks the best model at every checkpoint (1000 steps)
 - 📊 **Automatic Updates**: `best_checkpoint.pt` is updated whenever loss improves
@@ -409,6 +425,21 @@ python train_gpu_compatible.py
 # Output:
 📥 Loading checkpoint from models/l1-gpu-compatible/latest_checkpoint.pt
 ✅ Resumed from epoch 2, step 1847, loss: 2.1432
+```
+
+**📊 Monitor Training Progress:**
+```bash
+# Watch live training log
+tail -f models/l1-gpu-compatible/training.log
+
+# Check recent progress (last 20 lines)
+tail -20 models/l1-gpu-compatible/training.log
+
+# Search for best checkpoints
+grep "BEST" models/l1-gpu-compatible/training.log
+
+# Track loss progression
+grep "Step:" models/l1-gpu-compatible/training.log | tail -10
 ```
 
 ## 🎛️ Text Generation
