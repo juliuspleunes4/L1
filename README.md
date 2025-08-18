@@ -56,7 +56,6 @@ L1/
 ├── train_minimal.py      # Minimal training example (educational)
 ├── quick_setup.bat       # Windows quick setup script
 └── requirements.txt      # Python dependencies
-```
 ├── docs/               # Documentation
 ├── checkpoints/        # Model checkpoints (auto-created)
 ├── logs/               # Training logs (auto-created)
@@ -149,7 +148,7 @@ python tools/generate.py --model_path models/l1-gpu-compatible --prompt "The fut
 
 ### **📚 Next Steps**
 
-1. **Demo the Project**: Run `python demo.py` to test all components
+1. **Demo the Project**: Run `python tools/demo.py` to test all components
 2. **Customize Training**: Edit `configs/train_config_gpu.yaml` for your hardware
 3. **Add Custom Data**: See the Data Preparation section below for advanced options
 4. **Monitor Training**: Use `tail -f models/l1-gpu-compatible/training.log`
@@ -367,13 +366,13 @@ After adding a dataset, verify it's working:
 
 ```bash
 # Check dataset info
-python dataset_manager.py --info your_dataset
+python utils/dataset_manager.py --info your_dataset
 
 # Preview samples  
-python dataset_manager.py --preview your_dataset --samples 5
+python utils/dataset_manager.py --preview your_dataset --samples 5
 
 # Validate format
-python dataset_manager.py --validate your_dataset
+python utils/dataset_manager.py --validate your_dataset
 ```
 
 ## � Training
@@ -519,7 +518,7 @@ python -m pytest tests/ -v
 
 Run the demo script:
 ```bash
-python demo.py
+python tools/demo.py
 ```
 
 ## 📚 Documentation
@@ -572,12 +571,12 @@ python -m pytest tests/ -v
 
 Test model functionality:
 ```bash
-python test_model.py
+python tests/test_model.py
 ```
 
 Run the demo script:
 ```bash
-python demo.py
+python tools/demo.py
 ```
 
 ### Tokenizer Issues
@@ -628,10 +627,10 @@ The scripts are designed to handle Windows encoding. If you see Unicode errors, 
 **6. Text generation produces excessive `<unk>` tokens or garbled output**
 ```bash
 # Fix tokenizer (adds missing essential tokens like spaces and punctuation)
-python fix_existing_tokenizer.py
+python data_tools/fix_tokenizer.py
 
 # Then test
-python generate_simple.py --prompt "Hello world"
+python tools/generate.py --prompt "Hello world"
 ```
 
 **7. GPU out of memory**
