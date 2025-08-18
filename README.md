@@ -28,38 +28,34 @@ L1 is a transformer-based large language model implementation built from scratch
 
 ```
 L1/
-├── 🛠️  tools/              # User-facing command-line tools
-│   ├── train.py           # Main training script (GPU-optimized)
-│   ├── generate.py        # Text generation and inference
-│   ├── demo.py            # Interactive model demonstration
-│   └── validate.py        # Setup validation and testing
-├── 📊 data_tools/          # Dataset management utilities
-│   ├── add_dataset.py     # Dataset adding and preset management
-│   ├── prepare_dataset.py # Dataset preparation with BPE tokenization
-│   ├── download_preset.py # Automated dataset downloads
-│   ├── download_wikipedia.py # Wikipedia dataset downloader
-│   └── fix_tokenizer.py   # Tokenizer repair and optimization
-├── 🔧 utils/              # Project utilities and helpers
-│   ├── dataset_manager.py # Dataset management functions
-│   └── warning_manager.py # Warning and error management
-├── 📁 src/                # Core library source code
-│   ├── models/           # Model architectures (transformer, config, embeddings)
-│   ├── training/         # Training pipeline (trainer, optimizer, loss)
-│   ├── data/             # Data processing (tokenizer, dataset, preprocessing)
-│   └── utils/            # Core utilities (logging, device management)
-├── ⚙️  configs/            # Configuration files (YAML)
-├── 📜 scripts/            # Legacy development scripts
-├── 📂 data/               # Dataset storage (raw and processed)
-├── 🧪 tests/              # Unit tests and validation
-├── 🏗️  models/            # Trained model storage
-├── 📖 docs/               # Documentation and guides
-├── train_minimal.py      # Minimal training example (educational)
-├── quick_setup.bat       # Windows quick setup script
-└── requirements.txt      # Python dependencies
-├── docs/               # Documentation
-├── checkpoints/        # Model checkpoints (auto-created)
-├── logs/               # Training logs (auto-created)
-└── demo.py             # Quick demo script
+├── 🛠️  tools/                     # User-facing command-line tools
+│   ├── train.py                  # Main training script (GPU-optimized)
+│   ├── generate.py               # Text generation and inference
+│   ├── demo.py                   # Interactive model demonstration
+│   └── validate.py               # Setup validation and testing
+├── 📊 data_tools/                 # Dataset management utilities
+│   ├── add_dataset.py            # Dataset adding and preset management
+│   ├── prepare_dataset.py        # Dataset preparation with BPE tokenization
+│   ├── download_preset.py        # Automated dataset downloads
+│   ├── download_wikipedia.py     # Wikipedia dataset downloader
+│   └── fix_tokenizer.py          # Tokenizer repair and optimization
+├── 🔧 utils/                     # Project utilities and helpers
+│   ├── dataset_manager.py        # Dataset management functions
+│   └── warning_manager.py        # Warning and error management
+├── 📁 src/                       # Core library source code
+│   ├── models/                   # Model architectures (transformer, config, embeddings)
+│   ├── training/                 # Training pipeline (trainer, optimizer, loss)
+│   ├── data/                     # Data processing (tokenizer, dataset, preprocessing)
+│   └── utils/                    # Core utilities (logging, device management)
+├── ⚙️  configs/                   # Configuration files (YAML)
+├── 📜 scripts/                   # Legacy development scripts
+├── 📂 data/                      # Dataset storage (raw and processed)
+├── 🧪 tests/                     # Unit tests and validation
+├── 🏗️  models/                   # Trained model storage
+├── 📖 docs/                      # Documentation and guides
+├── train_minimal.py              # Minimal training example (educational)
+├── quick_setup.bat               # Windows quick setup script
+└── requirements.txt              # Python dependencies
 ```
 
 ## 🛠️ Installation
