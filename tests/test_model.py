@@ -6,7 +6,7 @@
 @details    : This script contains unit tests for the various components of the
               L1 model, ensuring that they function correctly and meet
               specifications.
-@version    : 1.0
+@version    : 3.3
 
 @license    : MIT License
 Copyright (c) 2025 Julius Pleunes

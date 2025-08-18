@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-@file       : train_gpu_compatible.py
+@file       : train.py
 @author     : J.J.G. Pleunes
-@date       : 07/2025
+@date       : 08/2025
 @brief      : GPU-compatible training script for L1 model.
 @details    : This script is designed to train the L1 model on GPUs, specifically optimized
               for RTX 5060 Ti (sm_120) compatibility issues. Works on the 40 and 50 series.
-@version    : 2.3
+@version    : 3.3
 
 @license    : MIT License
 Copyright (c) 2025 Julius Pleunes
@@ -31,6 +31,7 @@ SOFTWARE.
 """
 
 import os
+import sys
 import yaml
 import torch
 import torch.nn as nn
@@ -45,13 +46,16 @@ from tqdm import tqdm
 import time
 from datetime import datetime
 
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # Force PyTorch to suppress dynamo errors and fallback to eager execution
 import torch._dynamo
 torch._dynamo.config.suppress_errors = True
 
 # Setup warning management
 try:
-    from warning_manager import setup_training_warnings
+    from utils.warning_manager import setup_training_warnings
     setup_training_warnings("low")  # Show more info for debugging
 except ImportError:
     print("ℹ️  Warning manager not found - some warnings may appear")
@@ -613,7 +617,7 @@ def main():
     
     if not os.path.exists(tokenizer_path):
         print(f"❌ Tokenizer not found at {tokenizer_path}")
-        print("💡 Please run: python prepare_large_dataset.py <your_data_file> --vocab-size 32000")
+        print("💡 Please run: python data_tools/prepare_dataset.py <your_data_file> --vocab-size 32000")
         return
     
     tokenizer = BPETokenizer.load(tokenizer_path)

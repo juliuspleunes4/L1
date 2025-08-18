@@ -6,7 +6,7 @@ echo Features: BPE tokenization, intelligent text generation, automatic tokenize
 echo.
 
 REM Check if we're in the right directory
-if not exist "train_gpu_compatible.py" (
+if not exist "tools\train.py" (
     echo ❌ Please run this from the L1 project directory
     pause
     exit /b 1
@@ -32,28 +32,28 @@ set /p dataset_choice="Enter choice (1, 2, or 3): "
 
 if "%dataset_choice%"=="1" (
     echo Setting up advanced dataset preset...
-    python add_dataset.py --preset advanced
+    python data_tools/add_dataset.py --preset advanced
     echo Preparing dataset with BPE tokenization (32k vocab for intelligence)...
-    python prepare_large_dataset.py data/raw/combined_dataset.txt --vocab-size 32000
+    python data_tools/prepare_dataset.py data/raw/combined_dataset.txt --vocab-size 32000
 ) else if "%dataset_choice%"=="2" (
     echo Setting up beginner dataset preset...
-    python add_dataset.py --preset beginner
+    python data_tools/add_dataset.py --preset beginner
     echo Preparing dataset with BPE tokenization...
-    python prepare_large_dataset.py data/raw/combined_dataset.txt --vocab-size 32000
+    python data_tools/prepare_dataset.py data/raw/combined_dataset.txt --vocab-size 32000
 ) else if "%dataset_choice%"=="3" (
     echo Setting up intermediate dataset preset...
-    python add_dataset.py --preset intermediate
+    python data_tools/add_dataset.py --preset intermediate
     echo Preparing dataset with BPE tokenization...
-    python prepare_large_dataset.py data/raw/combined_dataset.txt --vocab-size 32000
+    python data_tools/prepare_dataset.py data/raw/combined_dataset.txt --vocab-size 32000
 ) else (
     echo Invalid choice, using advanced preset...
-    python add_dataset.py --preset advanced
-    python prepare_large_dataset.py data/raw/combined_dataset.txt --vocab-size 32000
+    python data_tools/add_dataset.py --preset advanced
+    python data_tools/prepare_dataset.py data/raw/combined_dataset.txt --vocab-size 32000
 )
 
 echo.
 echo 🔧 Step 4: Fixing tokenizer (ensures proper text generation)...
-python fix_existing_tokenizer.py
+python data_tools/fix_tokenizer.py
 
 echo.
 echo ✅ Setup complete! 
@@ -70,15 +70,15 @@ if "%choice%"=="1" (
     echo Features: Mixed precision, auto-checkpointing every 1000 steps, automatic resume
     echo Expected: ~9.5 steps/second, 134M parameters, BPE tokenization
     echo.
-    python train_gpu_compatible.py
+    python tools/train.py
 ) else (
     echo.
     echo 💡 To start training later, run:
-    echo    python train_gpu_compatible.py
+    echo    python tools/train.py
     echo.
     echo 📁 Your trained model will be saved to: models/l1-gpu-compatible/
     echo 🔄 Training automatically resumes from checkpoints
-    echo 🎯 Test generation with: python generate_simple.py
+    echo 🎯 Test generation with: python tools/generate.py
 )
 
 pause

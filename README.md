@@ -28,16 +28,35 @@ L1 is a transformer-based large language model implementation built from scratch
 
 ```
 L1/
-├── src/                # Source code
-│   ├── models/         # Model architectures (transformer, config, embeddings)
-│   ├── training/       # Training pipeline (trainer, optimizer, loss)
-│   ├── data/           # Data processing (tokenizer, dataset, preprocessing)
-│   ├── inference/      # Model inference and serving
-│   └── utils/          # Utilities (logging, device management, etc.)
-├── configs/            # Configuration files (YAML)
-├── scripts/            # Training and inference scripts  
-├── data/               # Dataset storage (raw and processed)
-├── tests/              # Unit tests
+├── 🛠️  tools/              # User-facing command-line tools
+│   ├── train.py           # Main training script (GPU-optimized)
+│   ├── generate.py        # Text generation and inference
+│   ├── demo.py            # Interactive model demonstration
+│   └── validate.py        # Setup validation and testing
+├── 📊 data_tools/          # Dataset management utilities
+│   ├── add_dataset.py     # Dataset adding and preset management
+│   ├── prepare_dataset.py # Dataset preparation with BPE tokenization
+│   ├── download_preset.py # Automated dataset downloads
+│   ├── download_wikipedia.py # Wikipedia dataset downloader
+│   └── fix_tokenizer.py   # Tokenizer repair and optimization
+├── 🔧 utils/              # Project utilities and helpers
+│   ├── dataset_manager.py # Dataset management functions
+│   └── warning_manager.py # Warning and error management
+├── 📁 src/                # Core library source code
+│   ├── models/           # Model architectures (transformer, config, embeddings)
+│   ├── training/         # Training pipeline (trainer, optimizer, loss)
+│   ├── data/             # Data processing (tokenizer, dataset, preprocessing)
+│   └── utils/            # Core utilities (logging, device management)
+├── ⚙️  configs/            # Configuration files (YAML)
+├── 📜 scripts/            # Legacy development scripts
+├── 📂 data/               # Dataset storage (raw and processed)
+├── 🧪 tests/              # Unit tests and validation
+├── 🏗️  models/            # Trained model storage
+├── 📖 docs/               # Documentation and guides
+├── train_minimal.py      # Minimal training example (educational)
+├── quick_setup.bat       # Windows quick setup script
+└── requirements.txt      # Python dependencies
+```
 ├── docs/               # Documentation
 ├── checkpoints/        # Model checkpoints (auto-created)
 ├── logs/               # Training logs (auto-created)
@@ -84,7 +103,7 @@ L1/
 5. **Verify installation** (optional):
    ```bash
    # Test data preparation (should work immediately)
-   python add_dataset.py --help
+   python data_tools/add_dataset.py --help
    
    # Test GPU setup (requires PyTorch)
    python -c "import torch; print(f'CUDA Available: {torch.cuda.is_available()}')"
@@ -94,7 +113,7 @@ L1/
 6. **Run validation test**:
 * Note: The test will most likely fail 3 out of the 5, because of CUDA problems. This can be safely ignored.
    ```bash
-   python validate_setup.py
+   python tools/validate.py
    ```
 
 ## 🎯 Quick Start
@@ -105,16 +124,16 @@ Ready to train your own intelligent language model? Here's the fastest way:
 
 ```bash
 # Step 1: Get high-quality training data (500k samples)
-python add_dataset.py --preset advanced
+python data_tools/add_dataset.py --preset advanced
 
 # Step 2: Prepare the dataset with BPE tokenization (for intelligence)
-python prepare_large_dataset.py data/raw/combined_dataset.txt --vocab-size 32000
+python data_tools/prepare_dataset.py data/raw/combined_dataset.txt --vocab-size 32000
 
 # Step 3: Start GPU training (resume-capable)
-python train_gpu_compatible.py
+python tools/train.py
 
 # Step 4: Generate text with your trained model
-python generate_simple.py --model_path models/l1-gpu-compatible --prompt "The future of AI is"
+python tools/generate.py --model_path models/l1-gpu-compatible --prompt "The future of AI is"
 ```
 
 **That's it!** The preset automatically downloads Wikipedia + ArXiv papers, and the BPE tokenization creates a 32k vocabulary for intelligent text understanding and generation.
@@ -207,21 +226,21 @@ Choose from curated datasets in `datasets.yaml`:
 
 ```bash
 # Advanced: Comprehensive training (recommended)
-python add_dataset.py --preset advanced
+python data_tools/add_dataset.py --preset advanced
 # → Wikipedia Simple + ArXiv Papers (500k samples)
 
 # Beginner: Quick training with high-quality data
-python add_dataset.py --preset beginner
+python data_tools/add_dataset.py --preset beginner
 # → Wikipedia Simple + News (50k samples)
 
 # Intermediate: Balanced training 
-python add_dataset.py --preset intermediate  
+python data_tools/add_dataset.py --preset intermediate  
 # → Wikipedia + Books + News (150k samples)
 
 # Specialized presets
-python add_dataset.py --preset conversational  # Reddit + Twitter + Wikipedia
-python add_dataset.py --preset technical       # GitHub + Stack Overflow + Papers
-python add_dataset.py --preset knowledge       # Full Wikipedia + Papers + Books
+python data_tools/add_dataset.py --preset conversational  # Reddit + Twitter + Wikipedia
+python data_tools/add_dataset.py --preset technical       # GitHub + Stack Overflow + Papers
+python data_tools/add_dataset.py --preset knowledge       # Full Wikipedia + Papers + Books
 ```
 
 **What happens when you run a preset:**
@@ -275,14 +294,14 @@ presets:
 3. **Use your dataset**:
 ```bash
 # Use a specific dataset
-python add_dataset.py --dataset-id your_awesome_dataset \
+python data_tools/add_dataset.py --dataset-id your_awesome_dataset \
     --name "Your Dataset" \
     --description "Description" \
     --method kagglehub \
     --path "username/dataset-name"
 
 # Or use in a preset (edit datasets.yaml first)
-python add_dataset.py --preset your_preset
+python data_tools/add_dataset.py --preset your_preset
 ```
 
 #### Method 2: Direct Download (Quick Testing)
@@ -296,7 +315,7 @@ dataset_path = kagglehub.dataset_download("Cornell-University/arxiv")
 dataset_path = kagglehub.dataset_download("your-username/your-dataset")
 
 # Then process with L1
-python prepare_large_dataset.py "path/to/downloaded/dataset.txt"
+python data_tools/prepare_dataset.py "path/to/downloaded/dataset.txt"
 ```
 
 #### Method 3: Kaggle API (Advanced)
@@ -311,13 +330,13 @@ kaggle datasets download username/dataset-name -p data/raw/
 unzip data/raw/dataset-name.zip -d data/raw/
 
 # Process with L1
-python prepare_large_dataset.py data/raw/your-extracted-file.txt
+python data_tools/prepare_dataset.py data/raw/your-extracted-file.txt
 ```
 
 #### Method 4: Custom Text Files
 ```bash
 # Prepare your own text files
-python prepare_large_dataset.py data/raw/your_text.txt
+python data_tools/prepare_dataset.py data/raw/your_text.txt
 
 # Or use the scripts directory
 python scripts/prepare_data.py \
@@ -363,7 +382,7 @@ python dataset_manager.py --validate your_dataset
 Train with GPU acceleration and advanced optimizations:
 ```bash
 # RTX 50.. Series optimized training
-python train_gpu_compatible.py
+python tools/train.py
 
 # Monitor progress
 tail -f models/l1-gpu-compatible/training.log
@@ -429,7 +448,7 @@ L1 provides comprehensive training monitoring with detailed logging:
 Training automatically resumes from the last checkpoint:
 ```bash
 # Same command detects and resumes automatically
-python train_gpu_compatible.py
+python tools/train.py
 
 # Output:
 📥 Loading checkpoint from models/l1-gpu-compatible/latest_checkpoint.pt
@@ -457,12 +476,12 @@ L1 supports various generation strategies with the simple generation script:
 
 ### Quick Generation
 ```bash
-python generate_simple.py --prompt "The future of AI"
+python tools/generate.py --prompt "The future of AI"
 ```
 
 ### Advanced Generation Options
 ```bash
-python generate_simple.py \
+python tools/generate.py \
     --prompt "The future of artificial intelligence" \
     --max_tokens 100 \
     --temperature 0.8 \
@@ -472,7 +491,7 @@ python generate_simple.py \
 **Using the Best Checkpoint:**
 ```bash
 # Use the automatically tracked best model
-python generate_simple.py --model_path models/l1-gpu-compatible --prompt "Your prompt here"
+python tools/generate.py --model_path models/l1-gpu-compatible --prompt "Your prompt here"
 
 # The script automatically uses pytorch_model.bin (best checkpoint format)
 # No need to specify best_checkpoint.pt directly
@@ -567,10 +586,10 @@ If you're seeing excessive `<unk>` tokens or garbled output during text generati
 
 ```bash
 # Fix existing tokenizers (adds missing essential tokens)
-python fix_existing_tokenizer.py
+python data_tools/fix_tokenizer.py
 
 # Then test generation
-python generate_simple.py --prompt "The future of AI is"
+python tools/generate.py --prompt "The future of AI is"
 ```
 
 This commonly happens with older trained models where the tokenizer was missing basic punctuation and space tokens.
@@ -580,7 +599,7 @@ This commonly happens with older trained models where the tokenizer was missing 
 ### Validation Script
 Run this to check if everything is set up correctly:
 ```bash
-python validate_setup.py
+python tools/validate.py
 ```
 
 ### Common Issues

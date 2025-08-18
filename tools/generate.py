@@ -6,7 +6,7 @@
 @brief      : Simple text generation script for L1 model.
 @details    : This script loads a pre-trained L1 model and generates text based on a
               prompt provided by the user.
-@version    : 1.0
+@version    : 3.3
 
 @license    : MIT License
 Copyright (c) 2025 Julius Pleunes

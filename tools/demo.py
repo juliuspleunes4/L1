@@ -6,7 +6,7 @@
 @brief      : Quick demo script to test L1 components.
 @details    : This script runs a series of tests to ensure that the L1 model,
               tokenizer, and other components are functioning as expected.
-@version    : 1.0
+@version    : 3.3
 @usage      : python demo.py
 
 @license    : MIT License
@@ -35,15 +35,15 @@ import os
 import sys
 import torch
 
-# Add src to path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def test_model_creation():
     """Test creating L1 model."""
     print("Testing L1 model creation...")
     
     try:
-        from models import L1Model, L1Config
+        from src.models import L1Model, L1Config
         
         # Create small config for testing
         config = L1Config(
@@ -72,7 +72,7 @@ def test_forward_pass():
     print("\nTesting model forward pass...")
     
     try:
-        from models import L1Model, L1Config
+        from src.models import L1Model, L1Config
         
         config = L1Config(
             vocab_size=1000,
@@ -108,7 +108,7 @@ def test_tokenizer():
     print("\nTesting BPE tokenizer...")
     
     try:
-        from data import BPETokenizer
+        from src.data import BPETokenizer
         
         # Create tokenizer
         tokenizer = BPETokenizer(vocab_size=1000)
