@@ -84,6 +84,21 @@ class TokenEmbedding(nn.Module):
             Token embeddings of shape (batch_size, seq_length, embed_dim)
         """
         return self.embedding(input_ids)
+    
+    @property
+    def num_embeddings(self) -> int:
+        """Number of embeddings (vocabulary size)."""
+        return self.embedding.num_embeddings
+    
+    @property
+    def embedding_dim(self) -> int:
+        """Embedding dimension."""
+        return self.embed_dim
+    
+    @property
+    def weight(self) -> torch.Tensor:
+        """Embedding weight tensor (read-only copy)."""
+        return self.embedding.weight.detach().clone()
 
 
 class PositionalEmbedding(nn.Module):
@@ -117,6 +132,13 @@ class PositionalEmbedding(nn.Module):
             Positional embeddings of shape (batch_size, seq_length, embed_dim)
         """
         batch_size, seq_length = input_ids.shape
+        
+        # Check sequence length bounds
+        if seq_length > self.max_seq_length:
+            raise ValueError(
+                f"Sequence length {seq_length} exceeds maximum "
+                f"supported length {self.max_seq_length}"
+            )
         
         # Create position indices
         position_ids = torch.arange(
