@@ -22,7 +22,18 @@ from io import StringIO
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from utils import get_device, set_seed, setup_logging, get_logger, move_to_device
+try:
+    from src.utils import get_device, set_seed, setup_logging, get_logger, move_to_device
+except ImportError:
+    try:
+        from utils import get_device, set_seed, setup_logging, get_logger, move_to_device
+    except ImportError:
+        # Set missing functions to None for graceful degradation
+        get_device = None
+        set_seed = None
+        setup_logging = None
+        get_logger = None
+        move_to_device = None
 
 
 class TestDeviceManagement(unittest.TestCase):
