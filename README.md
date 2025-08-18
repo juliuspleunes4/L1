@@ -1,7 +1,9 @@
 # L1 
 
-<p align="left">
-  <img src="assets/l1.jpeg" alt="L1" width="320">
+<p align="center">
+  <video src="assets/L1_teaser.mp4" width="480" autoplay loop playsinline>
+    Your browser does not support the video tag.
+  </video>
 </p>
 
 <p>
@@ -710,3 +712,7 @@ For questions and support:
 ---
 
 **Built with ❤️ by [Julius Pleunes](https://linkedin.com/in/juliuspleunes)**
+
+<p align="left">
+  <img src="assets/l1.jpeg" alt="L1" width="320">
+</p>
