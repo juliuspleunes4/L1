@@ -478,7 +478,7 @@ python tools/generate.py --prompt "The future of AI"
 ```bash
 python tools/generate.py \
     --prompt "The future of artificial intelligence" \
-    --max_tokens 100 \
+    --max_new_tokens 100 \
     --temperature 0.8 \
     --model_path models/l1-gpu-compatible/best_checkpoint.pt
 ```
@@ -494,7 +494,7 @@ python tools/generate.py --model_path models/l1-gpu-compatible --prompt "Your pr
 
 ### Generation Parameters
 - **Temperature**: Control randomness (0.1 = conservative, 1.0 = creative)
-- **Max Tokens**: Maximum number of tokens to generate
+- **Max New Tokens**: Maximum number of tokens to generate (use `--max_new_tokens`)
 - **Model Path**: Path to trained model checkpoint
 
 ### Example Output
