@@ -42,10 +42,10 @@ This directory contains a comprehensive test suite for the L1 language model pro
 ## Test Runner
 
 ### `run_all_tests.py`
-Comprehensive test runner with multiple execution modes:
+Comprehensive test runner with multiple execution modes and **automatic result logging**:
 
 ```bash
-# Run all tests
+# Run all tests with comprehensive logging
 python tests/run_all_tests.py
 
 # Run specific test module
@@ -55,12 +55,54 @@ python tests/run_all_tests.py test_models_comprehensive
 python tests/run_all_tests.py discover
 ```
 
+**Automatic Logging Features:**
+- 📄 **JSON Results**: Detailed test data in `tests/results/test_results_TIMESTAMP.json`
+- 📊 **CSV Reports**: Spreadsheet-compatible data in `tests/results/test_results_TIMESTAMP.csv`  
+- 🌐 **HTML Reports**: Beautiful web reports in `tests/results/test_report_TIMESTAMP.html`
+- 📝 **Detailed Logs**: Full execution logs in `tests/logs/test_run_TIMESTAMP.log`
+
+### `view_latest_results.py`
+Utility to quickly access the most recent test results:
+
+```bash
+# Show summary of latest results
+python tests/view_latest_results.py
+
+# Open HTML report in browser
+python tests/view_latest_results.py html
+
+# View JSON data file path
+python tests/view_latest_results.py json
+
+# View log file path  
+python tests/view_latest_results.py log
+
+# List all result files
+python tests/view_latest_results.py files
+```
+
 ## Running Tests
 
 ### Prerequisites
-Ensure all dependencies are installed:
+Ensure all dependencies are installed and virtual environment is activated:
 ```bash
+# Activate virtual environment
+.\.venv\Scripts\Activate.ps1
+
+# Install dependencies
 pip install -r requirements.txt
+```
+
+### Quick Start
+```bash
+# Run all tests with comprehensive logging
+python tests/run_all_tests.py
+
+# View latest results summary
+python tests/view_latest_results.py
+
+# Open beautiful HTML report
+python tests/view_latest_results.py html
 ```
 
 ### Individual Test Files
@@ -154,19 +196,78 @@ python tests/run_all_tests.py
 - Resource exhaustion scenarios
 - Graceful degradation testing
 
-## Expected Test Results
+## Test Result Formats
 
-### Performance Benchmarks
-- Model forward pass: < 100ms for small models
-- Tokenization: > 1000 tokens/second
-- Training step: < 500ms per batch
-- Memory usage: < 2GB for base configuration
+### 📄 JSON Results (`tests/results/`)
+Structured data perfect for CI/CD integration and automated analysis:
+```json
+{
+  "timestamp": "2025-08-18T20:20:09.511001",
+  "execution_time": 1.81,
+  "statistics": {
+    "total_tests": 82,
+    "passed": 62,
+    "success_rate": 75.6
+  },
+  "failures": [...],
+  "modules": [...]
+}
+```
 
-### Coverage Targets
-- Line coverage: > 90%
-- Branch coverage: > 85%
-- Function coverage: > 95%
-- Integration coverage: > 80%
+### 📊 CSV Reports (`tests/results/`)
+Spreadsheet-compatible format for data analysis and tracking:
+- Test execution summary with statistics
+- Detailed pass/fail breakdown by test
+- Module-level results and metrics
+- Easy to import into Excel, Google Sheets, etc.
+
+### 🌐 HTML Reports (`tests/results/`)
+Beautiful, interactive web reports featuring:
+- **Visual Dashboard**: Color-coded status indicators and progress bars
+- **Statistics Overview**: Pass rates, execution times, performance metrics
+- **Module Breakdown**: Organized by component with test counts
+- **Detailed Results**: Expandable failure/error details with syntax highlighting
+- **Professional Styling**: Clean, modern design suitable for sharing
+
+### 📝 Detailed Logs (`tests/logs/`)
+Complete execution logs for debugging and audit trails:
+- Timestamped entries for all test events
+- Module loading success/failure details
+- Complete error traces and failure information
+- Performance and timing data
+- Structured logging format for easy parsing
+
+## Automatic File Management
+
+### 🗂️ Directory Structure
+```
+tests/
+├── logs/                    # Detailed execution logs
+│   └── test_run_TIMESTAMP.log
+├── results/                 # Test result reports
+│   ├── test_results_TIMESTAMP.json
+│   ├── test_results_TIMESTAMP.csv
+│   └── test_report_TIMESTAMP.html
+└── ...
+```
+
+### 🚫 Git Integration
+All test result files are automatically excluded from git via `.gitignore`:
+```gitignore
+# Test result logs and reports
+tests/logs/
+tests/results/
+tests/*.log
+tests/*.csv
+tests/*.json
+tests/*.html
+```
+
+This ensures:
+- **No Repository Pollution**: Test results don't clutter your git history
+- **Local Development**: Results stay on your machine for analysis
+- **CI/CD Friendly**: Fresh results generated on each environment
+- **Privacy**: Sensitive test data doesn't get committed accidentally
 
 ## Troubleshooting
 
