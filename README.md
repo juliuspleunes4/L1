@@ -1,7 +1,7 @@
 # L1 
 
 <p align="left">
-  <img src="assets/L1_teaser.gif" alt="L1" width="480">
+  <img src="assets/l1.jpeg" alt="L1" width="320">
 </p>
 
 <p>
@@ -710,7 +710,3 @@ For questions and support:
 ---
 
 **Built with ❤️ by [Julius Pleunes](https://linkedin.com/in/juliuspleunes)**
-
-<p align="left">
-  <img src="assets/l1.jpeg" alt="L1" width="320">
-</p>
