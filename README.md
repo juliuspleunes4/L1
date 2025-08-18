@@ -1,6 +1,6 @@
 # L1 
 
-<p align="center">
+<p align="left">
   <img src="assets/L1_teaser.gif" alt="L1" width="480">
 </p>
 
