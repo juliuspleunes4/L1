@@ -40,11 +40,11 @@ def main():
     print("=" * 50)
     
     tests = [
-        ("python add_dataset.py --help", "Check add_dataset.py has --preset option", "--preset"),
-        ("python prepare_large_dataset.py --help", "Check prepare_large_dataset.py accepts input_path", "input_path"),
-        ("python train_gpu_compatible.py --help", "Check training script is available", None),
-        ("python generate_simple.py --help", "Check generation script is available", None),
-        ("python demo.py --help", "Check demo script is available", None),
+        ("python data_tools/add_dataset.py --help", "Check add_dataset.py has --preset option", "--preset"),
+        ("python data_tools/prepare_dataset.py --help", "Check prepare_dataset.py accepts input_path", "input_path"),
+        ("python tools/train.py --help", "Check training script is available", None),
+        ("python tools/generate.py --help", "Check generation script is available", None),
+        ("python tools/demo.py --help", "Check demo script is available", None),
     ]
     
     passed = 0
@@ -59,18 +59,18 @@ def main():
     if passed == total:
         print("🎉 All tests passed! Your L1 setup is ready.")
         print("\n🚀 Try the quick start:")
-        print("   python add_dataset.py --preset beginner")
+        print("   python data_tools/add_dataset.py --preset beginner")
     else:
         print("⚠️  Some tests failed. Please check the installation.")
         
     # Check if required files exist
     print("\n📁 Checking project structure...")
     required_files = [
-        "add_dataset.py",
-        "prepare_large_dataset.py", 
-        "train_gpu_compatible.py",
-        "generate_simple.py",
-        "demo.py",
+        "data_tools/add_dataset.py",
+        "data_tools/prepare_dataset.py", 
+        "tools/train.py",
+        "tools/generate.py",
+        "tools/demo.py",
         "datasets.yaml",
         "requirements.txt"
     ]
