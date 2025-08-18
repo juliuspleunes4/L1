@@ -47,7 +47,7 @@ class TestDeviceManagement(unittest.TestCase):
             self.assertIsInstance(device, torch.device)
             self.assertIn(str(device), ['cpu', 'cuda:0', 'cuda', 'mps'])
             
-        except:
+        except Exception:
             # Fallback implementation
             if torch.cuda.is_available():
                 device = torch.device('cuda')

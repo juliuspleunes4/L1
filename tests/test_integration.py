@@ -431,7 +431,7 @@ class TestEndToEndWorkflow(unittest.TestCase):
             outputs = model(invalid_input)
         except (RuntimeError, IndexError) as e:
             # Expected behavior for out-of-vocab tokens
-            self.assertIn(("index" in str(e).lower() or "out of range" in str(e).lower()), [True])
+            self.assertTrue("index" in str(e).lower() or "out of range" in str(e).lower())
         
         # 3. Test with very long sequences
         max_length = self.model_config.max_seq_length

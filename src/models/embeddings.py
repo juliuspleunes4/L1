@@ -97,8 +97,8 @@ class TokenEmbedding(nn.Module):
     
     @property
     def weight(self) -> torch.Tensor:
-        """Embedding weight tensor."""
-        return self.embedding.weight
+        """Embedding weight tensor (read-only copy)."""
+        return self.embedding.weight.detach().clone()
 
 
 class PositionalEmbedding(nn.Module):
