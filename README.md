@@ -6,7 +6,6 @@
 
 <p>
   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" alt="Python" width="32" title="Python">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/PyTorch_logo_icon.svg/744px-PyTorch_logo_icon.svg.png?20200318225611" alt="PyTorch" width="32" title="PyTorch">
 </p>
 
 L1 is a transformer-based large language model implementation built from scratch using PyTorch. This project provides a complete pipeline for training, fine-tuning, and deploying your own language model with comprehensive documentation and best practices.
