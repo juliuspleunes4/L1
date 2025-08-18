@@ -48,6 +48,18 @@ nosetests.xml
 coverage.xml
 *.cover
 *.py,cover
+
+# Test result logs and reports
+tests/logs/
+tests/results/
+tests/*.log
+tests/*.csv
+tests/*.json
+tests/*.html
+test_results_*.log
+test_results_*.csv
+test_results_*.json
+test_results_*.html
 .hypothesis/
 .pytest_cache/
 
