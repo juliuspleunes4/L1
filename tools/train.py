@@ -6,7 +6,7 @@
 @brief      : GPU-compatible training script for L1 model.
 @details    : This script is designed to train the L1 model on GPUs, specifically optimized
               for RTX 5060 Ti (sm_120) compatibility issues. Works on the 40 and 50 series.
-@version    : 2.3
+@version    : 3.3
 
 @license    : MIT License
 Copyright (c) 2025 Julius Pleunes

@@ -6,7 +6,7 @@
 @brief      : Quick demo script to test L1 components.
 @details    : This script runs a series of tests to ensure that the L1 model,
               tokenizer, and other components are functioning as expected.
-@version    : 1.0
+@version    : 3.3
 @usage      : python demo.py
 
 @license    : MIT License
