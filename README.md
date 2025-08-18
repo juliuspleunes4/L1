@@ -1,9 +1,7 @@
 # L1 
 
 <p align="center">
-  <video src="assets/L1_teaser.mp4" width="480" autoplay loop playsinline>
-    Your browser does not support the video tag.
-  </video>
+  <img src="assets/L1_teaser.gif" alt="L1" width="480">
 </p>
 
 <p>
