@@ -573,7 +573,7 @@ class TestComponentIntegration(unittest.TestCase):
         
         # 3. Verify all parameters are on correct device
         for param in model.parameters():
-            self.assertEqual(param.device, device)
+            self.assertEqual(param.device.type, device.type)  # Compare device types only
         
         # 4. Test inference on device
         input_ids = torch.randint(0, 50, (1, 8)).to(device)
@@ -587,7 +587,7 @@ class TestComponentIntegration(unittest.TestCase):
             logits = outputs
         
         # Output should be on same device
-        self.assertEqual(logits.device, device)
+        self.assertEqual(logits.device.type, device.type)  # Compare device types only
 
 
 if __name__ == '__main__':

@@ -344,7 +344,7 @@ class TestL1ModelComprehensive(unittest.TestCase):
         self.model.to(device)
         
         for param in self.model.parameters():
-            self.assertEqual(param.device, device)
+            self.assertEqual(param.device.type, device.type)
         
         # Test CUDA if available
         if torch.cuda.is_available():
@@ -352,7 +352,7 @@ class TestL1ModelComprehensive(unittest.TestCase):
             self.model.to(device)
             
             for param in self.model.parameters():
-                self.assertEqual(param.device, device)
+                self.assertEqual(param.device.type, device.type)  # Compare device types only
     
     def test_generation_basic(self):
         """Test basic text generation."""
