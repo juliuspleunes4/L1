@@ -28,39 +28,34 @@ L1 is a transformer-based large language model implementation built from scratch
 
 ```
 L1/
-├── 🛠️  tools/              # User-facing command-line tools
-│   ├── train.py           # Main training script (GPU-optimized)
-│   ├── generate.py        # Text generation and inference
-│   ├── demo.py            # Interactive model demonstration
-│   └── validate.py        # Setup validation and testing
-├── 📊 data_tools/          # Dataset management utilities
-│   ├── add_dataset.py     # Dataset adding and preset management
-│   ├── prepare_dataset.py # Dataset preparation with BPE tokenization
-│   ├── download_preset.py # Automated dataset downloads
-│   ├── download_wikipedia.py # Wikipedia dataset downloader
-│   └── fix_tokenizer.py   # Tokenizer repair and optimization
-├── 🔧 utils/              # Project utilities and helpers
-│   ├── dataset_manager.py # Dataset management functions
-│   └── warning_manager.py # Warning and error management
-├── 📁 src/                # Core library source code
-│   ├── models/           # Model architectures (transformer, config, embeddings)
-│   ├── training/         # Training pipeline (trainer, optimizer, loss)
-│   ├── data/             # Data processing (tokenizer, dataset, preprocessing)
-│   └── utils/            # Core utilities (logging, device management)
-├── ⚙️  configs/            # Configuration files (YAML)
-├── 📜 scripts/            # Legacy development scripts
-├── 📂 data/               # Dataset storage (raw and processed)
-├── 🧪 tests/              # Unit tests and validation
-├── 🏗️  models/            # Trained model storage
-├── 📖 docs/               # Documentation and guides
-├── train_minimal.py      # Minimal training example (educational)
-├── quick_setup.bat       # Windows quick setup script
-└── requirements.txt      # Python dependencies
-```
-├── docs/               # Documentation
-├── checkpoints/        # Model checkpoints (auto-created)
-├── logs/               # Training logs (auto-created)
-└── demo.py             # Quick demo script
+├── 🛠️  tools/                     # User-facing command-line tools
+│   ├── train.py                  # Main training script (GPU-optimized)
+│   ├── generate.py               # Text generation and inference
+│   ├── demo.py                   # Interactive model demonstration
+│   └── validate.py               # Setup validation and testing
+├── 📊 data_tools/                 # Dataset management utilities
+│   ├── add_dataset.py            # Dataset adding and preset management
+│   ├── prepare_dataset.py        # Dataset preparation with BPE tokenization
+│   ├── download_preset.py        # Automated dataset downloads
+│   ├── download_wikipedia.py     # Wikipedia dataset downloader
+│   └── fix_tokenizer.py          # Tokenizer repair and optimization
+├── 🔧 utils/                     # Project utilities and helpers
+│   ├── dataset_manager.py        # Dataset management functions
+│   └── warning_manager.py        # Warning and error management
+├── 📁 src/                       # Core library source code
+│   ├── models/                   # Model architectures (transformer, config, embeddings)
+│   ├── training/                 # Training pipeline (trainer, optimizer, loss)
+│   ├── data/                     # Data processing (tokenizer, dataset, preprocessing)
+│   └── utils/                    # Core utilities (logging, device management)
+├── ⚙️  configs/                   # Configuration files (YAML)
+├── 📜 scripts/                   # Legacy development scripts
+├── 📂 data/                      # Dataset storage (raw and processed)
+├── 🧪 tests/                     # Unit tests and validation
+├── 🏗️  models/                   # Trained model storage
+├── 📖 docs/                      # Documentation and guides
+├── train_minimal.py              # Minimal training example (educational)
+├── quick_setup.bat               # Windows quick setup script
+└── requirements.txt              # Python dependencies
 ```
 
 ## 🛠️ Installation
@@ -149,7 +144,7 @@ python tools/generate.py --model_path models/l1-gpu-compatible --prompt "The fut
 
 ### **📚 Next Steps**
 
-1. **Demo the Project**: Run `python demo.py` to test all components
+1. **Demo the Project**: Run `python tools/demo.py` to test all components
 2. **Customize Training**: Edit `configs/train_config_gpu.yaml` for your hardware
 3. **Add Custom Data**: See the Data Preparation section below for advanced options
 4. **Monitor Training**: Use `tail -f models/l1-gpu-compatible/training.log`
@@ -367,13 +362,13 @@ After adding a dataset, verify it's working:
 
 ```bash
 # Check dataset info
-python dataset_manager.py --info your_dataset
+python utils/dataset_manager.py --info your_dataset
 
 # Preview samples  
-python dataset_manager.py --preview your_dataset --samples 5
+python utils/dataset_manager.py --preview your_dataset --samples 5
 
 # Validate format
-python dataset_manager.py --validate your_dataset
+python utils/dataset_manager.py --validate your_dataset
 ```
 
 ## � Training
@@ -483,7 +478,7 @@ python tools/generate.py --prompt "The future of AI"
 ```bash
 python tools/generate.py \
     --prompt "The future of artificial intelligence" \
-    --max_tokens 100 \
+    --max_new_tokens 100 \
     --temperature 0.8 \
     --model_path models/l1-gpu-compatible/best_checkpoint.pt
 ```
@@ -499,7 +494,7 @@ python tools/generate.py --model_path models/l1-gpu-compatible --prompt "Your pr
 
 ### Generation Parameters
 - **Temperature**: Control randomness (0.1 = conservative, 1.0 = creative)
-- **Max Tokens**: Maximum number of tokens to generate
+- **Max New Tokens**: Maximum number of tokens to generate (use `--max_new_tokens`)
 - **Model Path**: Path to trained model checkpoint
 
 ### Example Output
@@ -519,7 +514,7 @@ python -m pytest tests/ -v
 
 Run the demo script:
 ```bash
-python demo.py
+python tools/demo.py
 ```
 
 ## 📚 Documentation
@@ -572,12 +567,12 @@ python -m pytest tests/ -v
 
 Test model functionality:
 ```bash
-python test_model.py
+python tests/test_model.py
 ```
 
 Run the demo script:
 ```bash
-python demo.py
+python tools/demo.py
 ```
 
 ### Tokenizer Issues
@@ -628,10 +623,10 @@ The scripts are designed to handle Windows encoding. If you see Unicode errors, 
 **6. Text generation produces excessive `<unk>` tokens or garbled output**
 ```bash
 # Fix tokenizer (adds missing essential tokens like spaces and punctuation)
-python fix_existing_tokenizer.py
+python data_tools/fix_tokenizer.py
 
 # Then test
-python generate_simple.py --prompt "Hello world"
+python tools/generate.py --prompt "Hello world"
 ```
 
 **7. GPU out of memory**
