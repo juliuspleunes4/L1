@@ -709,4 +709,9 @@ For questions and support:
 
 ---
 
+> “The limits of my language mean the limits of my world.”  
+> — *Ludwig Wittgenstein*
+
+---
+
 **Built with ❤️ by [Julius Pleunes](https://linkedin.com/in/juliuspleunes)**
