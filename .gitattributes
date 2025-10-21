@@ -1,0 +1,7 @@
+# GitHub language detection - exclude batch files and scripts
+*.bat linguist-vendored
+*.cmd linguist-vendored
+quick_setup.bat linguist-vendored
+
+# Force Python recognition for project
+*.py linguist-language=Python
