@@ -1,0 +1,16 @@
+{
+  "results": [
+    {
+      "vocab_size": 50000,
+      "actual_vocab_size": 50000,
+      "training_time": 781.1491532325745,
+      "compression_ratio": 4.599239474601179,
+      "fertility_score": 1.2760400556758429,
+      "encoding_speed_ms": 8.098459243774414,
+      "chars_per_second": 3333720.549468019
+    }
+  ],
+  "timestamp": "2025-12-04 12:59:52",
+  "train_samples": 28941,
+  "test_samples": 3216
+}

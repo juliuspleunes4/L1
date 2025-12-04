@@ -125,12 +125,13 @@ class BPETokenizer(Tokenizer):
             prev_char = char
         return pairs
     
-    def train(self, texts: List[str]) -> 'BPETokenizer':
+    def train(self, texts: List[str], min_frequency: int = 2) -> 'BPETokenizer':
         """
         Train BPE tokenizer on text corpus.
         
         Args:
             texts: List of texts to train on
+            min_frequency: Minimum frequency for a word to be included (default: 2)
             
         Returns:
             Trained tokenizer
@@ -145,6 +146,13 @@ class BPETokenizer(Tokenizer):
                 word_bytes = word.encode('utf-8')
                 word_unicode = ''.join(self.byte_encoder[b] for b in word_bytes)
                 word_freqs[word_unicode] += 1
+        
+        # Filter rare words to speed up training dramatically
+        if min_frequency > 1:
+            original_count = len(word_freqs)
+            word_freqs = Counter({word: freq for word, freq in word_freqs.items() 
+                                 if freq >= min_frequency})
+            print(f"Filtered words: {original_count:,} → {len(word_freqs):,} (min_freq={min_frequency})")
         
         # Initialize vocabulary with character-level tokens
         vocab = list(self.special_tokens.keys())
@@ -173,53 +181,77 @@ class BPETokenizer(Tokenizer):
         num_merges = self.vocab_size - len(vocab)
         merges = {}
         
-        for i in range(num_merges):
-            # Count pairs
+        print(f"Starting BPE training: {num_merges:,} merges needed")
+        print(f"Processing {len(word_freqs):,} unique word types")
+        
+        # Cache pair stats for each word to avoid recomputing
+        pair_stats = {}
+        for word, freq in word_freqs.items():
+            pair_stats[word] = defaultdict(int)
+            pairs_in_word = self._get_pairs(word_splits[word])
+            for pair in pairs_in_word:
+                pair_stats[word][pair] = freq
+        
+        for merge_idx in range(num_merges):
+            # Count pairs from cache
             pairs = defaultdict(int)
-            for word, freq in word_freqs.items():
-                word_tokens = word_splits[word]
-                pairs_in_word = self._get_pairs(word_tokens)
-                for pair in pairs_in_word:
+            for word in word_freqs:
+                for pair, freq in pair_stats[word].items():
                     pairs[pair] += freq
             
             if not pairs:
+                print(f"No more pairs to merge at step {merge_idx}")
                 break
             
             # Find most frequent pair
             best_pair = max(pairs, key=pairs.get)
             
-            # Merge the pair in all words
+            # Merge the pair in affected words only
             new_word_splits = {}
-            for word in word_freqs:
+            affected_words = [word for word in word_freqs if best_pair in pair_stats[word]]
+            
+            for word in affected_words:
                 new_word = []
-                i = 0
+                idx = 0
                 word_tokens = word_splits[word]
                 
-                while i < len(word_tokens):
+                while idx < len(word_tokens):
                     try:
-                        j = word_tokens.index(best_pair[0], i)
-                        new_word.extend(word_tokens[i:j])
-                        i = j
+                        j = word_tokens.index(best_pair[0], idx)
+                        new_word.extend(word_tokens[idx:j])
+                        idx = j
                     except ValueError:
-                        new_word.extend(word_tokens[i:])
+                        new_word.extend(word_tokens[idx:])
                         break
                     
-                    if (i < len(word_tokens) - 1 and 
-                        word_tokens[i + 1] == best_pair[1]):
+                    if (idx < len(word_tokens) - 1 and 
+                        word_tokens[idx + 1] == best_pair[1]):
                         new_word.append(best_pair[0] + best_pair[1])
-                        i += 2
+                        idx += 2
                     else:
-                        new_word.append(word_tokens[i])
-                        i += 1
+                        new_word.append(word_tokens[idx])
+                        idx += 1
                 
                 new_word_splits[word] = tuple(new_word)
+                
+                # Update pair cache for this word
+                pair_stats[word] = defaultdict(int)
+                new_pairs = self._get_pairs(new_word_splits[word])
+                for pair in new_pairs:
+                    pair_stats[word][pair] = word_freqs[word]
             
-            word_splits = new_word_splits
+            # Update word_splits
+            for word in affected_words:
+                word_splits[word] = new_word_splits[word]
             merges[best_pair] = len(vocab)
             vocab.append(best_pair[0] + best_pair[1])
             
-            if (i + 1) % 1000 == 0:
-                print(f"Completed {i + 1}/{num_merges} merges")
+            # Progress indicator
+            if (merge_idx + 1) % 500 == 0:
+                progress = (merge_idx + 1) / num_merges * 100
+                print(f"Progress: {merge_idx + 1:,}/{num_merges:,} merges ({progress:.1f}%) - Last: '{best_pair[0]}' + '{best_pair[1]}'")
+            elif (merge_idx + 1) % 100 == 0:
+                print(f"  {merge_idx + 1:,}/{num_merges:,} merges...", end='\r')
         
         # Update tokenizer state
         self.vocab = {token: idx for idx, token in enumerate(vocab)}
