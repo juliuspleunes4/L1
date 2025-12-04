@@ -149,17 +149,20 @@ class BPETokenizer(Tokenizer):
         # Initialize vocabulary with character-level tokens
         vocab = list(self.special_tokens.keys())
         
-        # Add essential tokens that are commonly missing
-        essential_tokens = [' ', '.', ',', '!', '?', ':', ';', '"', "'", '(', ')', '-', '\n', '\t']
-        for token in essential_tokens:
+        # Add ALL byte-level tokens first (256 possible bytes encoded as unicode)
+        # This ensures complete coverage and no <unk> tokens for any input
+        byte_tokens = sorted(set(self.byte_encoder.values()))
+        for token in byte_tokens:
             if token not in vocab:
                 vocab.append(token)
         
-        # Add all unique characters
+        # Add all unique characters from training corpus
         chars = set()
         for word in word_freqs:
             chars.update(word)
-        vocab.extend(sorted(chars - set(vocab)))  # Avoid duplicates
+        # Only add chars not already in vocab (byte tokens cover most)
+        new_chars = sorted(chars - set(vocab))
+        vocab.extend(new_chars)
         
         # Initialize word representations
         word_splits = {
