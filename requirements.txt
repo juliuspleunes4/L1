@@ -12,6 +12,14 @@ transformers>=4.30.0
 tokenizers>=0.13.0
 datasets>=2.12.0
 
+# Advanced attention mechanisms (Flash Attention 2)
+# Note: Flash Attention is optional on Windows - model will auto-fallback to optimized standard attention
+# Linux users can install with: pip install flash-attn --no-build-isolation
+
+# Efficient inference and quantization  
+# Note: bitsandbytes has limited Windows support - quantization features may not work
+accelerate>=0.20.0  # For distributed training and inference
+
 # Dataset downloading
 kagglehub>=0.3.0
 

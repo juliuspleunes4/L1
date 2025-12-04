@@ -1,18 +1,26 @@
 # GPU-optimized training configuration for L1
 # STABLE VERSION - Conservative settings to prevent PC freezing
 
-# Model configuration - intelligent but stable
+# Model configuration - V2.0 with advanced features
 model:
   vocab_size: 32000         # BPE tokenizer vocabulary size (overridden by actual tokenizer size during training)
-  max_seq_length: 512       # Conservative for stability (was 1024)
-  n_layers: 12              # Reduced from 16 for stability
-  n_heads: 12               # Reduced from 16 for stability
-  n_embd: 768               # Reduced from 1024 for stability
-  n_inner: 3072             # 4x embedding size
+  max_seq_length: 2048      # Extended from 512 with RoPE support (4096 available)
+  n_layers: 12              # Stable depth
+  n_heads: 12               # Query heads
+  n_embd: 768               # Embedding dimension
+  n_inner: 3072             # 4x embedding size (feed-forward)
   dropout: 0.1
   layer_norm_epsilon: 0.00001
   initializer_range: 0.02
   use_cache: true
+  
+  # V2.0 Advanced Attention Features
+  use_flash_attention: true  # 2-4x speedup with Flash Attention 2
+  use_rope: true             # Rotary Position Embeddings for better long-context
+  use_gqa: true              # Grouped Query Attention for efficient inference
+  n_kv_heads: 4              # GQA: 4 KV heads for 12 Q heads (3:1 ratio, saves memory)
+  rope_theta: 10000.0        # RoPE base frequency
+  bias: true                 # Use bias in linear layers
 
 # Training configuration - stable settings
 training:

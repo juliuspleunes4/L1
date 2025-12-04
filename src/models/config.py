@@ -56,11 +56,21 @@ class L1Config:
     
     # Model architecture
     vocab_size: int = 50257
-    max_seq_length: int = 1024
+    max_seq_length: int = 4096  # Extended from 1024 for longer context
     n_layers: int = 12
     n_heads: int = 12
     n_embd: int = 768
     n_inner: Optional[int] = None  # Default: 4 * n_embd
+    
+    # Advanced attention mechanisms (v2.0+)
+    use_flash_attention: bool = True  # Use Flash Attention 2 if available
+    use_rope: bool = True  # Use Rotary Position Embeddings
+    use_gqa: bool = True  # Use Grouped Query Attention for efficiency
+    n_kv_heads: Optional[int] = None  # Number of KV heads for GQA (default: n_heads // 4)
+    rope_theta: float = 10000.0  # Base for RoPE frequency
+    
+    # Bias configuration
+    bias: bool = True  # Use bias in linear layers
     
     # Regularization
     dropout: float = 0.1
@@ -81,10 +91,16 @@ class L1Config:
         """Post-initialization processing."""
         if self.n_inner is None:
             self.n_inner = 4 * self.n_embd
+        
+        # Set default GQA configuration
+        if self.n_kv_heads is None:
+            self.n_kv_heads = max(1, self.n_heads // 4) if self.use_gqa else self.n_heads
             
         # Validate configuration
         assert self.n_embd % self.n_heads == 0, \
             f"n_embd ({self.n_embd}) must be divisible by n_heads ({self.n_heads})"
+        assert self.n_heads % self.n_kv_heads == 0, \
+            f"n_heads ({self.n_heads}) must be divisible by n_kv_heads ({self.n_kv_heads})"
         assert self.vocab_size > 0, "vocab_size must be positive"
         assert self.max_seq_length > 0, "max_seq_length must be positive"
         assert self.n_layers > 0, "n_layers must be positive"
@@ -104,6 +120,12 @@ class L1Config:
             'n_heads': self.n_heads,
             'n_embd': self.n_embd,
             'n_inner': self.n_inner,
+            'use_flash_attention': self.use_flash_attention,
+            'use_rope': self.use_rope,
+            'use_gqa': self.use_gqa,
+            'n_kv_heads': self.n_kv_heads,
+            'rope_theta': self.rope_theta,
+            'bias': self.bias,
             'dropout': self.dropout,
             'layer_norm_epsilon': self.layer_norm_epsilon,
             'initializer_range': self.initializer_range,
